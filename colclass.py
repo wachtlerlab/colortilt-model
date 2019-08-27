@@ -212,9 +212,9 @@ class decoder:
                         if stimulusAngle<belowLim:
                             stimulusAngle=stimulusAngle+360#Change the center hue angle value smaller than the lower limit 1 cycle bigger (+360°)
                             decodedAngleSur=decodedAngleSur+360#Same transformation as above also to the decoded angle so that the hue shift stays the same.
-                if decodedAngleSur-stimulusAngle>300:#If induced hue shift is inferred to be bigger than 300°, something is wrong, so the decoded angle is actually 360° less.
+                if decodedAngleSur-stimulusAngle>180:#If induced hue shift is inferred to be bigger than 180°, same angle is given in negative counterpart.
                     decodedAngleSur=decodedAngleSur-360#transform nonsensical values (so far very lame way!)
-                if decodedAngleSur-stimulusAngle<-300:#Same as above, if hue shift is smaller than -300°, something is wrong and actual hue shift should be 360° more.
+                if decodedAngleSur-stimulusAngle<-180:#Same as above, if hue shift is smaller than -180°, hue shift should is given as positive value.
                     decodedAngleSur=decodedAngleSur+360
                 return decodedAngleSur-stimulusAngle , stimulusAngle-avgSur,surDecoder,popSurVector #returns the induced hue shift and center-surround hue angle difference
 
@@ -333,9 +333,9 @@ class decoder:
                         if stimulusAngle<belowLim:
                             stimulusAngle=stimulusAngle+360
                             decodedAng=decodedAng+360                
-                if decodedAng-stimulusAngle>200:
+                if decodedAng-stimulusAngle>180:
                     decodedAng=decodedAng-360# transform nonsensical values (so far very lame way!)
-                if decodedAng-stimulusAngle<-200:
+                if decodedAng-stimulusAngle<-180:
                     decodedAng=decodedAng+360
                 return decodedAng-stimulusAngle, stimulusAngle-avgSur, distLUT, popInh
             
@@ -395,9 +395,9 @@ class decoder:
                        if stimulusAngle<belowLim:
                            stimulusAngle=stimulusAngle+360
                            decodedAng=decodedAng+360
-               if decodedAng-stimulusAngle>300:
+               if decodedAng-stimulusAngle>180:
                    decodedAng=decodedAng-360# transform nonsensical values (so far very lame way!)
-               if decodedAng-stimulusAngle<-300:
+               if decodedAng-stimulusAngle<-180:
                    decodedAng=decodedAng+360
                return decodedAng-stimulusAngle , stimulusAngle-avgSur
             
@@ -474,9 +474,9 @@ class decoder:
                            stimulusAng=stimulusAng+360
                            popt[2]=popt[2]+360
                            
-                if popt[2]-stimulusAng>300:
+                if popt[2]-stimulusAng>180:
                    popt[2]=popt[2]-360# transform nonsensical values (so far very lame way!)
-                if popt[2]-stimulusAng<-300:
+                if popt[2]-stimulusAng<-180:
                    popt[2]=popt[2]+360
                 return popt[2]-stimulusAng, stimulusAng-avgSur, popFit,surDec, popt
             
@@ -496,7 +496,8 @@ class decoder:
             self.parameters=list(map(list,zip(*self.parameters)))#Transpose the list, so that each sublist corresponds to each parameter (amp, kappa, avg)
 
 """
-Thesis figure supplement 2, run only once :)
+Thesis figure supplement 2
+Also in thesis_figures.py
 """
 """
 a=colmod(1.5,1,0.5,[1,10],bwType="regular")

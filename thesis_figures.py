@@ -265,6 +265,7 @@ data_params.py was used
 
 """
 Figure 9: tuning curves of the best model as a function of surround
+Supplementary figure 4: the best fit model population activity without surround
 """
 """
 fig=plotter.plot_template(auto=True)
@@ -275,7 +276,7 @@ surr=[135,90,45,180,0,225,270,315]
 for i in range(0,len(surr)):
     a=col.colmod(1,2.3,0.5,[1.2,0.9],bwType="gradient/sum",phase=22.5,avgSur=surr[i],depInt=[0.2,0.4],depmod=True,stdtransform=False)
     ax=plotter.subplotter(fig,i)
-    for j in range(45,len(a.centery)+1,23):
+    for j in range(23,len(a.centery)+1,23):
         ax.plot(a.x[np.where(a.x==0)[0][0]:np.where(a.x==360)[0][0]],a.resulty[j-1][np.where(a.x==0)[0][0]:np.where(a.x==360)[0][0]],color="black",linewidth=1)
     ax.set_xticks(np.linspace(0,360,9))
     ax.tick_params(axis='both', which='major', labelsize=15)
@@ -287,7 +288,7 @@ plt.figure()
 plt.title("Population activity of the best fit model without surround modulation",fontsize=20)
 plt.ylabel("Unit activity [a.u.]",fontsize=15)
 plt.xlabel("Center hue angle [°]",fontsize=15)
-for j in range(45,len(a.centery)+1,23):    
+for j in range(23,len(a.centery)+1,23):    
     plt.plot(a.x[np.where(a.x==0)[0][0]:np.where(a.x==360)[0][0]],a.centery[j-1][np.where(a.x==0)[0][0]:np.where(a.x==360)[0][0]],color="black",linewidth=1)
 plt.tick_params(axis='both', which='major', labelsize=15)
 plt.xticks(np.linspace(0,360,9))
