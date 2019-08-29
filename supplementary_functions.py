@@ -29,7 +29,7 @@ def circler(r=1):
     """
     x=[]
     y=[]
-    angle=np.arange(0,2*np.pi,0.01)#angle in radiants
+    angle=np.linspace(0.017453292519943295,2*np.pi,360)#angle in radiants, radiant values are from 1° to in 360° in 1° increments
     for i in range(0,len(angle)):
         x.append(c.rect(r,angle[i]).real)
         y.append(c.rect(r,angle[i]).imag)

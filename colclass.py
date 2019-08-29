@@ -171,9 +171,9 @@ class decoder:
             SurDecoder: list. The list of population activities for different center stimuli. Note that in each case the avgSur is constant.
             Here, the colmod.x can be used to track each of the center stimulus hue angle (each array element in the list), and 
             colmod.unitTracker is used for each of the center stimulus array to track the activity of each unit. 
-            E.g. surDecoder[np.where(colmod.x==100)[0][0]][np.where(colmod.unitTracker==10)[0][0]] gives the unit activity with preferred hue angle of 10° at center stimulus
+            E.g. surDecoder[np.where(colmod.unitTracker==100)[0][0]][np.where(colmod.unitTracker==10)[0][0]] gives the unit activity with preferred hue angle of 10° at center stimulus
             hue angle of 100°. In other words, each element in SurDecoder is for a center stimulus hue, each value inside this array element is for a unit
-            with a definite preferred hue.
+            with a definite preferred hue. Both angles are tracked with unitTracker index list.
             popSurVec: list. The vectorized version of SurDecoder.
             """
             self.centSurDif=[]
