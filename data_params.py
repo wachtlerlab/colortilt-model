@@ -156,6 +156,7 @@ ax.legend(loc="best", bbox_to_anchor=(1.2,1),fontsize=15)
 """
 Look at the filtered model fits with waitforbuttonpress 
 NOTE: this code should be stopped after a while, as it will go through each and every model in the uploaded file.
+TO DO: Axis lines (x=0,y=0) and model estimates without psychophysics data
 """
 q=0#To track the number of the model fit.
 labmap=["data","model"]#label map

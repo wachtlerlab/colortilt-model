@@ -266,6 +266,7 @@ data_params.py was used
 """
 Figure 9: tuning curves of the best model as a function of surround
 Supplementary figure 4: the best fit model population activity without surround
+TO DO: Add in the middle of S4 the pop act. without surround for comparison.
 """
 """
 fig=plotter.plot_template(auto=True)

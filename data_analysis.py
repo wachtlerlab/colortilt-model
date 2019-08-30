@@ -6,6 +6,7 @@ Created on Sun Jul 21 12:02:37 2019
 """
 """
 Paramter scan script to fit the model to the psychophysics data (Klauke & Wachtler)
+TO DO: Do the parameter scan for the population vector error corrected.
 """
 import pandas as pd
 import numpy as np

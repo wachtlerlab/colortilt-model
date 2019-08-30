@@ -188,22 +188,77 @@ as the circle radius?
 For now circle fit approach is used for normalization.
 """
 """
-Normalize the population vectors by using the circle fit
+Normalize the population vectors by using the circle fit, so that each vector contributes to the sum as the circle vector length.
 """
-normval=np.array(circNunf[0])/np.array(nunRealMax)#normalization factors for each vector, same result comes for circnunf[1]/nunImagMax
-popSurVec2=[]
-decodedAng=[]
+normvalf=np.array(circNunf[0])/np.array(nunRealMax)#normalization factors for each vector, same result comes for circnunf[1]/nunImagMax (for np.round(a,10))
+popSurVecf=[]
+decodedAngf=[]
 for i in range(0,len(pvd.popSurVec)):
-    popSurVec2.append(np.array(pvd.popSurVec[i])*normval)
-    decodedAng.append(np.rad2deg(c.phase(np.sum(popSurVec2[i]))))
-    if np.rad2deg(c.phase(np.sum(popSurVec2[i])))<0.5:
-        decodedAng[i]=decodedAng[i]+360
+    popSurVecf.append(np.array(pvd.popSurVec[i])*normvalf)
+    decodedAngf.append(np.rad2deg(c.phase(np.sum(popSurVecf[i]))))
+    if np.rad2deg(c.phase(np.sum(popSurVecf[i])))<0.5:
+        decodedAngf[i]=decodedAngf[i]+360
 
+"""
+Try the same as above with x and y radius.
+"""
+normvalx=np.array(circNunr[0])/np.array(nunRealMax)
+popSurVecx=[]
+decodedAngx=[]
+for i in range(0,len(pvd.popSurVec)):
+    popSurVecx.append(np.array(pvd.popSurVec[i])*normvalx)
+    decodedAngx.append(np.rad2deg(c.phase(np.sum(popSurVecx[i]))))
+    if np.rad2deg(c.phase(np.sum(popSurVecx[i])))<0.5:
+        decodedAngx[i]=decodedAngx[i]+360
+        
+normvaly=np.array(circNuni[0])/np.array(nunRealMax)
+popSurVecy=[]
+decodedAngy=[]
+for i in range(0,len(pvd.popSurVec)):
+    popSurVecy.append(np.array(pvd.popSurVec[i])*normvaly)
+    decodedAngy.append(np.rad2deg(c.phase(np.sum(popSurVecy[i]))))
+    if np.rad2deg(c.phase(np.sum(popSurVecy[i])))<0.5:
+        decodedAngy[i]=decodedAngy[i]+360
+        
 plt.figure(8)
 plt.title("Decoder errors for different situations",fontsize=20)    
-plt.plot(pvd.centSurDif,pvd.angShift,".",markersize=1,color="blue",label="before correction")#decoding bias +-3
-plt.plot(pvd.centSurDif,decodedAng-np.linspace(1,360,360),".",markersize=1,color="orange",label="after correction")#max decoder bias is reduced to 0.5264918997367829    
+plt.plot(pvd.centSurDif,pvd.angShift,".",markersize=1,color="black",label="before correction")#decoding bias +-3
+plt.plot(pvd.centSurDif,decodedAngf-np.linspace(1,360,360),".",markersize=1,color="blue",label="after correction (circle fit)")#max decoder bias is reduced to 0.5264918997367829    
+plt.plot(pvd.centSurDif,decodedAngx-np.linspace(1,360,360),".",markersize=1,color="red",label="after correction (x radius)")#max decoder bias is reduced to 0.5264918998461212    
+plt.plot(pvd.centSurDif,decodedAngy-np.linspace(1,360,360),".",markersize=1,color="green",label="after correction (y radius)")#max decoder bias is reduced to 0.5264918998461496    
+plt.xticks(np.linspace(-180,180,9))
+plt.plot([-180,180],[0,0],color="gray")
 plt.legend()
+"""
+Different corrections (best circle fit, x radius or y radius of the ellipse show exactly the same performance of decoder error)
+"""
+angmap=[0,21,67]#angular value map for plot, 1°, 22° and 68°, as popSurVec[0] corresponds to 1° stimulus
+fig=plt.figure(9)
+plt.title("Vector population examples for the non-uniform corrected model",fontsize=20)
+plt.xticks([])
+plt.yticks([])
+plt.box(False)
+for i in range(0,3):
+    fig.add_subplot(1,3,i+1,projection="polar")
+    plt.title("Center Stimulus=%s°"%(angmap[i]+1),fontsize=15,y=1.08)
+    plt.polar(vecdict[angmap[i]+1]["theta"],vecdict[angmap[i]+1]["r"],".",markersize=1,color="black",label="non corrected")
+    for j in range(0,len(popSurVecf[67])):
+        plt.polar(c.polar(popSurVecy[angmap[i]][j])[1],c.polar(popSurVecy[angmap[i]][j])[0],".",markersize=1,color="green",label="y radius")
+        plt.polar(c.polar(popSurVecx[angmap[i]][j])[1],c.polar(popSurVecx[angmap[i]][j])[0],".",markersize=1,color="red",label="x radius")
+        plt.polar(c.polar(popSurVecf[angmap[i]][j])[1],c.polar(popSurVecf[angmap[i]][j])[0],".",markersize=1,color="blue",label="circle fit")       
+    plt.polar(np.deg2rad([angmap[i]+1,angmap[i]+1]),[0,0.0008])
+    plt.yticks([])
+plt.legend(["non corrected","y radius","x radius","cirle fit"],loc="best", bbox_to_anchor=(1,1),fontsize=15)
+
+plt.figure(10)
+for i in range(0,len(popSurVecf)):
+    plt.polar(c.polar(popSurVecy[i][i])[1],c.polar(popSurVecy[i][i])[0],".",markersize=1,color="green",label="y radius")
+    plt.polar(c.polar(popSurVecx[i][i])[1],c.polar(popSurVecx[i][i])[0],".",markersize=1,color="red",label="x radius")
+    plt.polar(c.polar(popSurVecf[i][i])[1],c.polar(popSurVecf[i][i])[0],".",markersize=1,color="blue",label="circle fit")
+plt.legend(["y radius","x radius","cirle fit"])
+plt.yticks([])
+
+
 """
 Alternative idea:
 Try to find the portion of vectors to be added around the center hue to get the decoding bias of 0 for the cases of non-symmetric 
