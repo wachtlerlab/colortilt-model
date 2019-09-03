@@ -6,7 +6,7 @@ Created on Wed May 29 01:19:20 2019
 """
 '''
 Class for the model and decoder objects. This script contains all essential codes and functions for the model and decoders.
-This script is imported to other analzsis scripts.
+This script is imported to other analysis scripts.
 
 Used libraries and modules:
 NumPy, cmath, SciPy
@@ -155,14 +155,21 @@ class decoder:
             activity of the unit. Then each unit is addded together and the angle of the resulting vector is the decoded hue angle. The addition
             and retrieval of the resulting vector angle is done in complex plane due to its simplicity.
         """
-        def __init__(self,x,resulty,unitTracker,avgSur=180):
+        def __init__(self,x,resulty,unitTracker,avgSur=180,errNorm=False,centery=None,dataFit=False):
             """Parameters
             -------------
             x: array. The colmod.x variable should be given here.
             resulty: list. The colmod.resulty variable should be given here.
             unitTracker: list. The colmod.unitTracker variable should be given here.
             avgSur: float, optional. The surround hue angle in degrees. 180° by default.
-            
+            errNorm: boolean, optional. If True, the vectors of the tuning curve (in maximum value) are multiplied by a value, so that each
+            vector is within a circle with the x axis radius of the population vector ellipsis. Note that the error correction only dampens the
+            magnitude of the error relative to the uncorrected population activity.
+            centery: list. The colmod.centery variable should be given here, when errNorm is True. Else this variable can be ignored.
+            dataFit: boolean, optional. If True, only the measured center hue angles (0,45,90,...,315) in the psychophysics data are computed by
+            the decoder. This parameter is to reduce computational workload during data fit scan.
+
+
             Returns
             -------
             centSurDif: list. The center-surround stimulus hue angle difference in degrees.
@@ -180,6 +187,20 @@ class decoder:
             self.angShift=[]
             self.popSurVec=[]
             self.surDecoder=[]
+           
+            if dataFit==True:#If model fit to the data is to be done, only the measured angles are taken into consideration
+                datAng=avgSur+np.linspace(-180,157.5,16)#transform the data center-surround angle difference into absolute angular values
+                datAng[np.where(datAng>360)]=datAng[np.where(datAng>360)]-360#Ensure there is no angle bigger than 360°
+                datAng[np.where(datAng<0)]=datAng[np.where(datAng<0)]+360#Ensure there is no angle smaller than 360°
+
+            if errNorm==True:
+                    popNoSurVecx=[]#The tuning curve maximum activity vector x values without surround modulation.
+                    for i in range(0,len(unitTracker)):
+                        popNoSur=decoder.nosurround(unitTracker[i],x,centery).noSur[i]#the unit activity without surround
+                                                                                      #for center stimulus=preferred hue angle
+                        popNoSurVecx.append(popNoSur*np.e**(1j*np.deg2rad(unitTracker[i])).real)
+                    circRad=max(popNoSurVecx)-min(popNoSurVecx)#The radius of the circle for the vector population error correction
+                    normVal=np.array(circRad)/np.array(popNoSurVecx)
             def vector_decoder(stimulusAngle,unitStep=1):#vector sum decoding (used in Gilbert et al. 1990).
                 surDecoder=[]
                 for i in range(0,len(resulty),unitStep):
@@ -187,8 +208,9 @@ class decoder:
                 popSurVector=[]#Make the surDecoder values vector in complex plane.
                 for i in range(0,len(surDecoder)):
                     popSurVector.append(surDecoder[i]*np.e**(1j*np.deg2rad(unitTracker[i*unitStep])))#each unit is transformed into vectors in complex plain with vector length equal to
-                    #unit activity and angle equal to preferred unit angle (in form of z=r*e**(i*angle)), !Computations for angle are done here in radiants
-                    
+                    #unit activity and angle equal to preferred unit angle (in form of z=r*e**(i*angle)), !Computations for angle are done here in radiants  
+                if errNorm==True:
+                    popSurVector=popSurVector*normVal
                 np.sum(popSurVector)#vector sum of neural population
                 decodedAngleSur=np.rad2deg(c.phase(np.sum(popSurVector)))#Take the angle of the resulting vector with c.phase()
                 if decodedAngleSur<0:
@@ -218,16 +240,26 @@ class decoder:
                     decodedAngleSur=decodedAngleSur+360
                 return decodedAngleSur-stimulusAngle , stimulusAngle-avgSur,surDecoder,popSurVector #returns the induced hue shift and center-surround hue angle difference
 
-            for i in range(0,len(unitTracker)):#Form the list of decoder outputs for the center hue angles 0°-360°
-                angs,csd,surdec,popsurv = vector_decoder(stimulusAngle=unitTracker[i])#angs is the angular shift, csd is center-surround difference,surdec is surround decoder, 
-                                                                                      #popsurv is the population vector. As cen ter stimuli, the preferred hue angles of the filters
-                                                                                      #are given (1°-...-360°)
-                self.angShift.append(angs)
-                self.centSurDif.append(csd)
-                self.surDecoder.append(surdec)
-                self.popSurVec.append(popsurv)
-            self.centSurDif, self.angShift = zip(*sorted(zip(self.centSurDif,self.angShift)))#sort the values from centsurdif=-180 to +180!
-                
+            if dataFit==True:#If True, then only angles measured in psychophysics experiments are given as inputs to the decoder function.
+                for i in range(0,len(datAng)):#i here is the stimulusAngle index 
+                    angs,csd,surdec,popsurv = vector_decoder(stimulusAngle=datAng[i])
+                    self.angShift.append(angs)
+                    self.centSurDif.append(csd)
+                    self.surDecoder.append(surdec)
+                    self.popSurVec.append(popsurv)
+                self.centSurDif, self.angShift = zip(*sorted(zip(self.centSurDif,self.angShift)))#sort the values from centsurdif=-180 to +180!
+
+            else:
+                for i in range(0,len(unitTracker)):#Form the list of decoder outputs for the center hue angles 0°-360°
+                    angs,csd,surdec,popsurv = vector_decoder(stimulusAngle=unitTracker[i])#angs is the angular shift, csd is center-surround difference,surdec is surround decoder, 
+                                                                                          #popsurv is the population vector. As cen ter stimuli, the preferred hue angles of the filters
+                                                                                          #are given (1°-...-360°)
+                    self.angShift.append(angs)
+                    self.centSurDif.append(csd)
+                    self.surDecoder.append(surdec)
+                    self.popSurVec.append(popsurv)
+                self.centSurDif, self.angShift = zip(*sorted(zip(self.centSurDif,self.angShift)))#sort the values from centsurdif=-180 to +180!
+                    
     class ml:
         """The maximum likelihood decoder:
             This decoder assumes that the filter population is "unaware" if there is a surround modulation happening or not. Resultingly, the idea is that,

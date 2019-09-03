@@ -7,7 +7,8 @@ Created on Tue Aug 27 14:17:03 2019
 
 """
 Analysis of the population vector decoder in the non-uniform model.
-Aim is to eliminat the decoder bias in the no surround case
+Aim is to eliminate the decoder bias in the no surround case
+Code is transferred to colclass.py, it is functional there. This script is thus for tracking the development progress.
 """
 import numpy as np
 import matplotlib.pyplot as plt

@@ -17,9 +17,11 @@ from supplementary_functions import std2kappa, depth_modulator, plotter, param_d
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter, AutoMinorLocator
 from mpl_toolkits.mplot3d import Axes3D
 
-paraml=pickle.load(open("paraml_fit_10_errType_rms_2019-08-23.pckl","rb"))#Pickle file of the scanned parameters. This name should be changed according to the file wished to be analyzed.
+dataName="paraml_fit_10_decoder_vecsum_errType_rms_2019-09-01"#Name of the pickle file to be opened.
+paraml=pickle.load(open("%s.pckl"%(dataName),"rb"))#Pickle file of the scanned parameters. This name should be changed according to the file wished to be analyzed.
 dictTot=pickle.load(open("dicttot.pckl","rb"))#Dictionary of the subject average.
 meanrms=[]
+rmsThres=4.5#the RMS threshold for filtering the scan parameters
 for i in range(0,len(paraml)):
     meanrms.append(np.array(list(paraml[i]["dif"].values())).mean())#The mean root mean square error fo the filtered models
 
@@ -34,9 +36,9 @@ plt.xticks(np.arange(3.7,7.6,0.2),)
 plt.tick_params(axis='both', which='major', labelsize=15)
 
 
-fltrms=[meanrms[np.where(np.array(meanrms)<4)[0][i]] for i in range(0,len(np.where(np.array(meanrms)<4)[0]))]#Take out the parameters which have a RMS >4
-fltind=[np.where(np.array(meanrms)<4)[0][i] for i in range(0,len(np.where(np.array(meanrms)<4)[0]))]#index list of the fltrms
-outind=[np.where(np.array(meanrms)>=4)[0][i] for i in range(0,len(np.where(np.array(meanrms)>=4)[0]))]#index list of the parameters not included in fltrms
+fltrms=[meanrms[np.where(np.array(meanrms)<rmsThres)[0][i]] for i in range(0,len(np.where(np.array(meanrms)<rmsThres)[0]))]#Take out the parameters which have a RMS >4
+fltind=[np.where(np.array(meanrms)<rmsThres)[0][i] for i in range(0,len(np.where(np.array(meanrms)<rmsThres)[0]))]#index list of the fltrms
+outind=[np.where(np.array(meanrms)>=rmsThres)[0][i] for i in range(0,len(np.where(np.array(meanrms)>=rmsThres)[0]))]#index list of the parameters not included in fltrms
 fltrms, fltind=zip(*sorted(zip(fltrms,fltind)))#sort fltind and fltrms values in the same ascending order 
 
 """
@@ -85,7 +87,7 @@ plotdictf={"smwf":smwf,"difcf":difcf,"difsmf":difsmf,"cabwf":cabwf,"smadf":smadf
 params=["smw","cBWd","smd","caBW","sma"]#to name the parameters in the plot title
 paramsf=["smwf","difcf","difsmf","cabwf","smadf"]#to name the parameters in the plot title
 colMap=["gray","red","blue"]#color map
-labmap=["rms>4","rms<4","best 10 models"]#label map
+labmap=["rms>%s"%(rmsThres),"rms<%s"%(rmsThres),"best 10 models"]#label map
 fig = plt.figure()
 plt.title("Parameter distribution of models",fontsize=18,y=1.08)
 plt.xticks([])#main plot figure ticks are off
@@ -148,7 +150,7 @@ for j in range(0,4):
         ax.plot(x1,y1,'o',color=colMap[0],label=labmap[0])
         ax.plot(x,y,'o',color=colMap[1],label=labmap[1])
         ax.plot(x2,y2,'o',color=colMap[2],label=labmap[2])
-        ax.set_title('x=%s , y=%s , z=%s'%(params[j],params[k],params[l]),fontdict={'fontsize': 15, 'fontweight': 'medium'})
+        ax.set_title('x=%s , y=%s'%(params[j],params[k]),fontdict={'fontsize': 15, 'fontweight': 'medium'})
         ax.tick_params(axis='both', which='major', labelsize=15)
 
 ax.legend(loc="best", bbox_to_anchor=(1.2,1),fontsize=15)
@@ -156,8 +158,15 @@ ax.legend(loc="best", bbox_to_anchor=(1.2,1),fontsize=15)
 """
 Look at the filtered model fits with waitforbuttonpress 
 NOTE: this code should be stopped after a while, as it will go through each and every model in the uploaded file.
-TO DO: Axis lines (x=0,y=0) and model estimates without psychophysics data
+TO DO: Axis lines (x=0,y=0) and model estimates without psychophysics data DONE
 """
+dataPlot=False#If False, then the data is not plotted.
+try:
+    dataName.index("vecsum")
+    deco="vecsum"
+except ValueError:
+    deco="ml"#type of the decoder for the plot
+
 q=0#To track the number of the model fit.
 labmap=["data","model"]#label map
 surrInt=(135,90,45,180,0,225,270,315)#surround subplot order should be like this (see help(plotter.subplotter))
@@ -171,20 +180,32 @@ for i in fltind:
     ax=plt.gca()
     ax.xaxis.set_label_coords(0.5, -0.07)
     ax.yaxis.set_label_coords(-0.05,0.5)
-    plt.xlabel("center surround difference",fontsize=20)
-    plt.ylabel("angular shift",fontsize=20)
+    plt.xlabel("Center-surround hue difference [°]",fontsize=20)
+    plt.ylabel("Induced hue shift [°]",fontsize=20)
     
     for j in range(0,len(dictTot)):#Create the model and decoder objects for each surround by using the parameter sets. Dicttot has each surround condition as element inside.
         #colMod=col.colmod(Kcent,Ksur,maxInh,stdInt,bwType="gradient/sum",phase=phase,avgSur=surrAvg[i],depInt=depInt,depmod=True,stdtransform=False)
         colMod=col.colmod(1,paraml[i]["ksi"],1,stdInt=[paraml[i]["ku"],paraml[i]["kb"]],bwType="gradient/sum",\
                           phase=22.5,avgSur=surrInt[j],depInt=[paraml[i]["depb"],paraml[i]["depu"]],depmod=True,stdtransform=False)#The model      
-        dec=col.decoder.ml(colMod.x,colMod.centery,colMod.resulty,colMod.unitTracker,avgSur=surrInt[j],dataFit=True)#the decoder
+        if deco=="vecsum":
+            print("population vector decoder")
+            dec=col.decoder.vecsum(colMod.x,colMod.resulty,colMod.unitTracker,avgSur=surrInt[j],errNorm=True,centery=colMod.centery,dataFit=True)#the decoder
+        elif deco=="ml":
+            print("maximum likelihood decoder")
+            dec=col.decoder.ml(colMod.x,colMod.centery,colMod.resulty,colMod.unitTracker,avgSur=surrInt[j],dataFit=True)#the decoder
+        else:
+            pass
         ax=plotter.subplotter(fig,j)#subplot the color tilt for each surround
-        ax.errorbar(dictTot[surrInt[j]]["angshi"].keys(),dictTot[surrInt[j]]["angshi"].values(),dictTot[surrInt[j]]["se"].values(),fmt='.',capsize=3,label=labmap[0],ecolor="gray",color="black")
+        if dataPlot==True:
+            ax.errorbar(dictTot[surrInt[j]]["angshi"].keys(),dictTot[surrInt[j]]["angshi"].values(),dictTot[surrInt[j]]["se"].values(),fmt='.',capsize=3,label=labmap[0],ecolor="gray",color="black")
         #data plot with errorbars (above line)
         ax.plot(dec.centSurDif,dec.angShift,color=colMap[1],label=labmap[1])#model plot
+        ax.plot([0,0],[-25,25],color="black",linewidth=0.8)
+        ax.plot([-185,185],[0,0],color="black",linewidth=0.8)
         ax.set_ylim(bottom=-25,top=25)#y axis limit +-25
+        ax.set_xlim([-185,185])
         ax.set_xticks(np.linspace(-180,180,9))#x ticks between +-180 and ticks are at cardinal and oblique angles.
+        ax.set_yticks(np.linspace(-20,20,5))#x ticks between +-180 and ticks are at cardinal and oblique angles.
         ax.tick_params(axis='both', which='major', labelsize=15)#major ticks are increazed in label size
         ax.xaxis.set_major_locator(MultipleLocator(90))#major ticks at cardinal angles.
         ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))

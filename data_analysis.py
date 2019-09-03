@@ -6,7 +6,7 @@ Created on Sun Jul 21 12:02:37 2019
 """
 """
 Paramter scan script to fit the model to the psychophysics data (Klauke & Wachtler)
-TO DO: Do the parameter scan for the population vector error corrected.
+TO DO: Do the parameter scan for the population vector error corrected. DONE
 """
 import pandas as pd
 import numpy as np
@@ -87,8 +87,7 @@ for i in range(0,360,45):
     if i==315:
         print("all ok, ready to roll with cfi")
 
-
-def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms"):
+def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",deco="ml"):
     """
     Data fit function:
         Checks the fit quality of the model with given parameters to the psychophysics data by using the given error estimation method.
@@ -111,6 +110,7 @@ def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms")
         phase: float, optional. The phase of the non-uniformity in the model. Chosen as 22.5° (blue-yellow axis) for standard. 
         errType: string, optional. The method to be used for quantifying the fit quality. "rms"=Root mean square error, "mae"= mean absolute error, "cfi"= comparative fit index,
         "tli"= Tucker-Lewis index. For a detailed information about each of the model fit measurement: http://www.davidakenny.net/cm/fit.htm
+        dec: string, optional. The decoder type to be used. The variable is "ml" (maximum likelihood) for standard, can also be "vecsum" (population vector).
         
         Note that the rms and mae values are given in terms of data standard error values. For example, rms=1 means the RMSEA between data and model is in average 1 standard error
         for each of the datapoint measured.
@@ -129,7 +129,14 @@ def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms")
     """
     for i in range(0,len(surrAvg)):
         colMod=col.colmod(Kcent,Ksur,maxInh,stdInt,bwType="gradient/sum",phase=phase,avgSur=surrAvg[i],depInt=depInt,depmod=True,stdtransform=False)#see colclass.py for details.
-        dec=col.decoder.ml(colMod.x,colMod.centery,colMod.resulty,colMod.unitTracker,avgSur=surrAvg[i],dataFit=True)#maximum likelihood decoder, see colclass.py for details.
+        if deco=="vecsum":
+            print("vecsum decoder")
+            dec=col.decoder.vecsum(colMod.x,colMod.resulty,colMod.unitTracker,avgSur=surrAvg[i],errNorm=True,centery=colMod.centery,dataFit=True)    
+        elif deco=="ml":
+            print("ml decoder")
+            dec=col.decoder.ml(colMod.x,colMod.centery,colMod.resulty,colMod.unitTracker,avgSur=surrAvg[i],dataFit=True)#maximum likelihood decoder, see colclass.py for details.
+        else:
+            pass
         if errType=="rms":#Root mean square error, quantified in standard error values.
             sumval=np.sqrt((((np.array(dec.angShift)-np.array(list(dictTot[surrAvg[i]]["angshi"].values())))\
                             /np.array(list(dictTot[surrAvg[i]]["se"].values())))**2).mean())#Formula: sqrt(mean(((model-data)/SE_data)^2))
@@ -189,7 +196,7 @@ def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms")
         print("Next surround")
     return rs,decobjs
 
-def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms"):
+def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",deco="ml"):
     """Parameter scan function:
         This function uses the data_dist() function to scan through all parameter combinations given in the function. Warning: The scanning
         process takes long time, in some cases >30h. 
@@ -206,13 +213,14 @@ def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms"):
         depstep: Increments to increase depbs or decrease depus.
         phInt: list. The non-uniformity phase values to be scanned.
         errType: string. Possible fit error measurements. To see the possible strings check data_dist().
+        dec: string, optional. The decoder type to be used. The variable is "ml" (maximum likelihood) for standard, can also be "vecsum" (population vector).
         
         Returns
         -------
         decoders: list. The list of decoder objects which yield a good data fit. Maximum likelihood decoder is used.
         params: list. The list of dictionaries including parameters of the models giving good model fits.
     """
-    
+    print("decoder=%s"%(deco))
     kc=1#Kcent is arbitrary as the model is non-uniform!
     maxInh=1#these 2 parameters irrelevant, they dont do any job here!
     decoders=[]
@@ -235,7 +243,7 @@ def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms"):
                             if depb>=depu:#To ensure the lower limit does not exceed the upper limit
                                 break
                             print("moddepbel=%s,moddepup=%s,kbel=%s,kup=%s,ksur=%s,phase=%s"%(depb,depu,kb,ku,ksi[i],phase))#The model parameters
-                            dif,dec=data_dist(kc,ksi[i],maxInh,stdInt=[ku,kb],depInt=[depb,depu],fitThres=fit,errType=errType,phase=phase)#fit value and decoder list
+                            dif,dec=data_dist(kc,ksi[i],maxInh,stdInt=[ku,kb],depInt=[depb,depu],fitThres=fit,errType=errType,phase=phase,deco=deco)#fit value and decoder list
                             if len(dec)==8:
                                 print("fit params work for each of the surround for given rms threshold")
                                 decoders.append(dec)#only when the model gives a good fit for all of the surround, outputs of the data_dist are appended.
@@ -246,10 +254,9 @@ def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms"):
 The parameter scan
 """    
 phInt=np.linspace(0,157.5,8)#phase of depmod and stdInt (center units) can be scanned as well if wished.    
-fit=10;errType="rms";date=date.today()#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
-decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5])#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
-decl,paraml=scan_params(fit,np.linspace(0.1,2.3,2),0.5,2,0,1,1,1,errType=errType,phInt=[22.5])#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
-
+fit=10;errType="rms";date=date.today();decod="vecsum"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
+decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+#The line 255 is for the scan, change values here for changing the scan attributes.
 """
 Save the filtered model values after parameter scan with pickle if the folders are absent.
 Try is the statement to check if the code below raises exception. If so, the line in except is computed.
@@ -257,16 +264,16 @@ This part is written later on for possible parameter scans in the next time, so 
 runs. 
 """
 try: 
-    with open('paraml_fit_%s_errType_%s_%s.pckl'%(fit,errType,date),"rb") as file:
+    with open('paraml_fit_%s_decoder_%s_errType_%s_%s.pckl'%(fit,decod,errType,date),"rb") as file:
         pickl=pickle.load(file)
 except FileNotFoundError:    
     print("creating the pickle file")
-    f = open('paraml_fit_%s_errType_%s_%s.pckl'%(fit,errType,date), 'wb')
+    f = open('paraml_fit_%s_decoder_%s_errType_%s_%s.pckl'%(fit,decod,errType,date), 'wb')
     pickle.dump(paraml, f)
     print("pickle file is created")
 except EOFError:
     print("filling the empty pickle file")
-    f = open('paraml_fit_%s_errType_%s_%s.pckl'%(fit,errType,date), 'wb')
+    f = open('paraml_fit_%s_decoder_%s_errType_%s_%s.pckl'%(fit,decod,errType,date), 'wb')
     pickle.dump(paraml, f)
     print("pickle file is filled")
 
