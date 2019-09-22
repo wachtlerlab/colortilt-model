@@ -187,8 +187,9 @@ def surround_plotter(surr,grType,depmod=False):
 
 surrInt=(135,90,45,180,0,225,270,315)
 surrParfr=surround_plotter(surr=surrInt,grType="gf")#Maximum activity normalized model. FIGURE 3
+plt.subplots_adjust(left=0.06, bottom=0.09, right=0.8, top=0.88, wspace=0.14, hspace=0.15)
 surrParSum=surround_plotter(surr=surrInt,grType="gs")#Total activity normalized model FIGURE 4
-
+plt.subplots_adjust(left=0.06, bottom=0.09, right=0.8, top=0.88, wspace=0.14, hspace=0.15)
 """
 Important parameters of no surround modulation: max/min ang shift and corresponding csds
 for fr normalized:

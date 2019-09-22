@@ -74,8 +74,7 @@ ax3.legend(["before surround modulation","after surround modulation"],loc="best"
 ax3.xaxis.set_major_locator(MultipleLocator(90))
 ax3.xaxis.set_major_formatter(FormatStrFormatter('%d'))
 ax3.xaxis.set_minor_locator(MultipleLocator(45))
-plt.tight_layout()
-
+plt.subplots_adjust(left=0.08, bottom=0.1, right=0.75, top=0.88, wspace=0.47, hspace=0)
 
 """
 
@@ -191,7 +190,7 @@ ax3.plot(dec2m.centSurDif,dec2m.angShift,label="narrower center tuning",color="r
 ax3.plot(dec3m.centSurDif,dec3m.angShift,label="narrower surround modulation",color="blue")
 ax3.plot(dec4m.centSurDif,dec4m.angShift,label="stronger surround modulation",color="green")
 ax3.legend(loc="best", bbox_to_anchor=(1,1),fontsize=15)
-plt.tight_layout()
+plt.subplots_adjust(left=0.06, bottom=0.08, right=0.73, top=0.96, wspace=0.23, hspace=0)
 """
 """
 Supplementary figure 5
@@ -212,6 +211,7 @@ plt.plot(col3.x[np.where(col3.x==0)[0][0]:np.where(col3.x==360)[0][0]],1-col3.su
 plt.legend(loc="best", bbox_to_anchor=(1,1),fontsize=15)
 plt.tick_params(axis='both', which='major', labelsize=15)
 plt.xticks(np.linspace(0,360,9))
+plt.subplots_adjust(left=0.05, bottom=0.09, right=0.9, top=0.90, wspace=0.20, hspace=0.20)
 
 """
 
@@ -242,6 +242,7 @@ plt.plot(dec1vm.centSurDif,dec1vm.angShift,label=labs[1],color=colors[1])
 plt.plot(dec1m.centSurDif,dec1m.angShift,label=labs[2],color=colors[2])
 plt.plot(dec1mf.centSurDif,dec1mf.angShift,label=labs[3],color=colors[3])
 plt.legend(loc="best", bbox_to_anchor=(1,1),fontsize=15)
+plt.subplots_adjust(left=0.06, bottom=0.09, right=0.99, top=0.94, wspace=0.2, hspace=0.2)
 """
 
 """
@@ -252,7 +253,7 @@ done in circular_model_different_BW.py
 
 """
 Figure 5: Qualitative data reproduction
-analysis_gradientvsnromalBW_changingsurround was used
+analysis_gradientvsnromalBW_changingsurround was used !Some debugging necessary
 """
 
 """
@@ -268,6 +269,14 @@ TO DO: Add in the middle of S4 the pop act. without surround for comparison. DON
 """
 """
 fig=plotter.plot_template(auto=True)
+fig.text(0.379,0.34,"225",size=15)
+fig.text(0.528,0.34,"270",size=15)
+fig.text(0.683,0.34,"315",size=15)
+fig.text(0.683,0.48,"0",size=15)
+fig.text(0.379,0.48,"180",size=15)
+fig.text(0.683,0.61,"45",size=15)
+fig.text(0.528,0.61,"90",size=15)
+fig.text(0.379,0.61,"135",size=15)
 plt.title("Tuning curves of the best model",y=1.08,fontsize=20)#1st plot is the color tilt curve, subplots with different surrounds
 plt.xlabel("Center stimulus hue angle [°]",fontsize=15)
 plt.ylabel("Unit activity [a.u.]",fontsize=15,x=-0.1)
@@ -276,7 +285,12 @@ for i in range(0,len(surr)):
     a=col.colmod(1,2.3,0.5,[1.2,0.9],bwType="gradient/sum",phase=22.5,avgSur=surr[i],depInt=[0.2,0.4],depmod=True,stdtransform=False)
     if i==4:
         ax=fig.add_subplot(3,3,i+2)
+        ax.axes.get_yaxis().set_visible(False)
+        ax.axes.get_xaxis().set_visible(False)
         ax2=fig.add_subplot(3,3,i+1)
+        
+        ax2.axes.get_yaxis().set_visible(False)
+        ax2.axes.get_xaxis().set_visible(False)
     else:
         ax=plotter.subplotter(fig,i)
     for j in range(23,len(a.centery)+1,23):
@@ -296,6 +310,7 @@ for i in range(0,len(surr)):
     ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
     ax.xaxis.set_minor_locator(MultipleLocator(45))
     ax.set_xlim([0,360])
+plt.subplots_adjust(left=0.105, bottom=0.09, right=0.98, top=0.88, wspace=0.12, hspace=0.20)
 """
 
 """

@@ -176,6 +176,7 @@ class plotter:
         """
         if i<=3:
             ax1=fig.add_subplot(3,3,i+1)#First 4 subplots (0:3) are added normally
+            
         elif i==4:#The fifth subplot (i=4) is used for texts to note each surround condition
             ax1=fig.add_subplot(3,3,i+2)
             ax2=fig.add_subplot(3,3,i+1)
@@ -189,6 +190,31 @@ class plotter:
             ax2.text(0.45,0.9,"90",size=15)
             ax2.text(0,0.9,"135",size=15)
             ax2.axis("off")
+            ax1.axes.get_yaxis().set_visible(False)
+            ax1.axes.get_xaxis().set_visible(False)
         else:#The remaining subplots are added by skipping the 5th subplot area.
             ax1=fig.add_subplot(3,3,i+2)
+        #Following if statements ensures, that x and y axes are shown only on the left corner of the figure.
+        if i in (0,3):
+            ax=plt.gca()
+            ax.axes.get_xaxis().set_visible(False)            
+        if i in (6,7):
+            ax=plt.gca()
+            ax.axes.get_yaxis().set_visible(False)
+        if i in (1,2):
+            ax=plt.gca()
+            ax.axes.get_yaxis().set_visible(False)
+            ax.axes.get_xaxis().set_visible(False)            
+        if i==5:
+            ax=plt.gca()
+            ax.axes.get_yaxis().set_visible(True)
+            ax.axes.get_xaxis().set_visible(True)
         return ax1
+    
+"""
+TO DO:
+    -Look at the symmetry along 0° center-surround difference for best fit models maximum likelihood and population vector decoders
+    by taking the negative cent-sur-dif values, switching it to positive and plotting both on each (data_params.py)
+    -Modify the surround subplots (8 subplots), so that the x and y axes values are only on the left edge. (supplementary_functions.py) DONE
+    -Make the plots automatical, find the function for arranging the spaces and copy paste for all! 
+"""

@@ -154,7 +154,7 @@ for j in range(0,4):
         ax.tick_params(axis='both', which='major', labelsize=15)
 
 ax.legend(loc="best", bbox_to_anchor=(1.2,1),fontsize=15)
-
+plt.subplots_adjust(left=0.05, bottom=0.05, right=0.99, top=0.89, wspace=0.2, hspace=0.39)
 """
 Look at the filtered model fits with waitforbuttonpress 
 NOTE: this code should be stopped after a while, as it will go through each and every model in the uploaded file.
@@ -212,11 +212,11 @@ for i in fltind:
         ax.xaxis.set_minor_locator(MultipleLocator(45))#minor ticks at obliques.
         print("1 subplot done")
     ax.legend(loc="best", bbox_to_anchor=(1,1),fontsize=20)#add the legend to the subplot in the very end, after all surrounds are plotted.
+    plt.subplots_adjust(left=0.07, bottom=0.09, right=0.86, top=0.95, wspace=0.1, hspace=0.13)
     while True:#This line ensures the next color tilt curve is plotted when a keyboard button is pressed.
         if plt.waitforbuttonpress(0):
             break
     plt.close()
-
 """
 Kellner angle vs my SE rms comparison
 """

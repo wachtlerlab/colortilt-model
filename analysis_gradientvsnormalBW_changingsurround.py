@@ -9,6 +9,7 @@ The analysis of color tilt in different surrounds for given surround angle in al
 Model types are uniform-non uniform model. Non-uniform model can be normalized by maximum unit activity or the total unit activity,
 each of these variants can also have the uniform or non-uniform surround modulation. All non-uniformities have the phase of 22.5, that 
 strongest surround suppression and narrowest tuning curve is in 22.5°
+Small issues with figure 3, which can be sorted out later.
 '''
 
 import numpy as np
@@ -24,6 +25,27 @@ params=["maanshi","csdmaanshi","mianshi","csdmianshi","decprec"]#color tilt curv
 
 dictPar=param_dict(dec,params)#preallocate the dictionary of decoders and parameters
 
+def plot_adjuster():
+    """Adjust the plot size automatically for each plot in successive order, atm it is optimized only for figure 5, this would but also work
+    for other models.
+    """
+    while True:#This line ensures the next color tilt curve is plotted when a keyboard button is pressed.
+        if plt.waitforbuttonpress(0):
+            plt.close()
+            break
+    
+    plt.subplots_adjust(left=0.16, bottom=0.09, right=0.74, top=0.88, wspace=0.05, hspace=0.08)
+    while True:#This line ensures the next color tilt curve is plotted when a keyboard button is pressed.
+        if plt.waitforbuttonpress(0):
+            plt.close()
+            break
+    
+    plt.subplots_adjust(left=0.14, bottom=0.09, right=0.8, top=0.88, wspace=0.1, hspace=0.1)
+    while True:#This line ensures the next color tilt curve is plotted when a keyboard button is pressed.
+        if plt.waitforbuttonpress(0):
+            plt.close()
+            break
+    return
 
 def surr_analysis(surr,grType,depmod):#Make plot titles for each condition (bwType,depmod)!
     """Color tilt plotter function for the given model type:
@@ -64,7 +86,7 @@ def surr_analysis(surr,grType,depmod):#Make plot titles for each condition (bwTy
     fig2=plotter.plot_template(auto=True)#2nd plot is the population activity for center stimulus=100°, subplots with different surrounds
     plt.xlabel("Center stimulus angle [°]",fontsize=15)
     plt.ylabel("Population activity [a.u.]",fontsize=15,x=-0.1)
-    plt.title("Pop. activity (100°) %s with %s"%(tit,tit2),y=1.08,fontsize=20)
+    plt.title("Pop. activity (100°) %s with %s"%(tit,tit2),x=0.55,y=1.08,fontsize=20)
     
     fig3=plotter.plot_template(auto=True)#Tuning curves of the chromatic filters, subplots with different surrounds
     plt.xlabel("Center stimulus angle [°]",fontsize=15)
@@ -132,7 +154,7 @@ def surr_analysis(surr,grType,depmod):#Make plot titles for each condition (bwTy
             ax2.legend(loc="best", bbox_to_anchor=(1,1),fontsize=15)
         
         """
-        Same work done for fig 3.
+        Same work done for fig 3. Problem with this figure, the figure is but unnecessary, so can be discarded for the time being
         """
         ax3=plotter.subplotter(fig3,i)
         for l in range(0,len(surr)):#This for loops plots for each subplot all tuning curves with preferred hue angle as in surr list!   
@@ -141,10 +163,29 @@ def surr_analysis(surr,grType,depmod):#Make plot titles for each condition (bwTy
             else:
                 ax3.plot(np.linspace(0,359.9,3600),colMod.resulty[np.where(colMod.unitTracker==surr[l])[0][0]][np.where(colMod.x==0)[0][0]:np.where(colMod.x==360)[0][0]],color="black",linewidth=1.0)
         ax3.set_xticks(np.linspace(0,360,9))
-        ax3.tick_params(axis='both', which='major', labelsize=15)
         ax3.xaxis.set_major_locator(MultipleLocator(90))
         ax3.xaxis.set_major_formatter(FormatStrFormatter('%d'))
         ax3.xaxis.set_minor_locator(MultipleLocator(45))
+        ax3.tick_params(axis='x', which='major', labelsize=15)
+        ax3.tick_params(axis='y', which='major', labelsize=15)
+        
+        if i in (0,3):
+            ax1.axes.get_xaxis().set_visible(False)            
+            ax2.axes.get_xaxis().set_visible(False)
+
+        elif i in (6,7):
+            ax1.axes.get_yaxis().set_visible(False)
+            ax2.axes.get_yaxis().set_visible(False)
+        elif i in (1,2):
+            ax1.axes.get_yaxis().set_visible(False)
+            ax1.axes.get_xaxis().set_visible(False)
+            ax2.axes.get_yaxis().set_visible(False)
+            ax2.axes.get_xaxis().set_visible(False)            
+        elif i==5:
+            ax1.axes.get_yaxis().set_visible(True)
+            ax1.axes.get_xaxis().set_visible(True)
+            ax2.axes.get_yaxis().set_visible(True)
+            ax2.axes.get_xaxis().set_visible(True)
         
         """
         Mayhem is the collection of all important color tilt values for each decoder and each surround condition.
@@ -189,6 +230,7 @@ dictPargfDep=surr_analysis(surrInt,grType="gf",depmod=True)
 
 dictPargs=surr_analysis(surrInt,grType="gs",depmod=False) 
 dictPargsDep=surr_analysis(surrInt,grType="gs",depmod=True)#FIGURE 5 
+plot_adjuster()
 
 """  
 These are the artifacts from last working session, where each title and axis labels were given manually. 
