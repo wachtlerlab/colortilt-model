@@ -52,7 +52,7 @@ plt.xticks(np.arange(3.7,7.6,0.2),)
 plt.tick_params(axis='both', which='major', labelsize=15)
 
 
-def param_calculator(paraml,fltind,outind,rmsThres,symDict,dataPlot=False,deco="ml"):
+def param_calculator(paraml,fltind,outind,rmsThres,dataPlot=False,deco="ml"):
     """
     Calculate average center BW, min-max center BW difference, average sur mod depth, min-max sur mod depth by using following parameters:
     Parameters: surround modulation width, average center BW, min-max center BW difference, average mod depth sur, min-max mod depth sur (phase all equal in this case)
@@ -173,6 +173,7 @@ def param_calculator(paraml,fltind,outind,rmsThres,symDict,dataPlot=False,deco="
     NOTE: this code should be stopped after a while, as it will go through each and every model in the uploaded file.
     TO DO: Axis lines (x=0,y=0) and model estimates without psychophysics data DONE
     """
+    symDict={}
     q=0#To track the number of the model fit.
     labmap=["data","model"]#label map
     surrInt=(135,90,45,180,0,225,270,315)#surround subplot order should be like this (see help(plotter.subplotter))
@@ -226,24 +227,37 @@ def param_calculator(paraml,fltind,outind,rmsThres,symDict,dataPlot=False,deco="
                 break
         plt.close()
         a=input("continue?   ")#if written yes to input, iteration goes on, if not, it stops :)
-        if a=="yes":
-            pass
-        elif a=="no":
-            return
-        else:
-            a=input("continue?   ")
-    return  
-mlSymDict={}#This dictionary will contain the ml best fit model decoder objects for different surrounds, which will then be used 
-            #for symmetry analysis 
-param_calculator(mlParams,mlind,mlout,4,mlSymDict)
-popvecSymDict={}
-param_calculator(popVecParams,popvecind,popvecout,4.5,popvecSymDict,deco="vecsum")
+        numa=1
+        while numa==1:
+            if a=="yes":
+                numa=0
+                pass
+            elif a=="no":
+                numa=0
+                return symDict
+            else:
+                numa=1
+                a=input("continue?   ")
+    return  symDict
+mlSymDict=param_calculator(mlParams,mlind,mlout,4)
+popvecSymDict=param_calculator(popVecParams,popvecind,popvecout,4.5,deco="vecsum")
 
 def symmetry_analyzer(dicti):
     symVal={}
+    angles=(135,90,45,180,0,225,270,315)
+    try: 
+        str(dicti).index("vecsum")
+        name="population vector decoder"
+    except ValueError:
+        name="maximum likelihood decoder"
     for i in range(1,len(dicti)+1):
         symVal.update({i:{}})
-        for j in range(0,360,45):
+        fig=plotter.plot_template(auto=True)
+        plt.title("Symmetry analysis of %s"%(name),y=1.08,fontsize=20)
+        plt.xlabel("Absolute center surround angle difference [°]",fontsize=15)
+        plt.ylabel("Absolute hue shift [°]",fontsize=15)
+
+        for j in (135,90,45,180,0,225,270,315):
             if j<180:
                 csdneg=np.flip(abs(np.array(dicti[i][j].centSurDif[0:7])),0)#center surround differences are transformed into absolute values.
                 angsneg=np.flip(abs(np.array(dicti[i][j].angShift[0:7])),0)#angular shifts are transformed into absolute values.
@@ -254,23 +268,33 @@ def symmetry_analyzer(dicti):
                 angsneg=np.flip(abs(np.array(dicti[i][j].angShift[1:8])),0)#angular shifts are transformed into absolute values.
                 csdpos=np.array(dicti[i][j].centSurDif[9:16])
                 angspos=np.array(dicti[i][j].angShift[9:16])                
-            print(angsneg,angspos,dicti[i][j].angShift)
             rms=np.sqrt(((angsneg-angspos)**2).mean())
             symVal[i].update({j:rms})
-            plt.figure()
-            plt.plot(csdneg,angsneg,"x",color="blue",label="negative")
-            plt.plot(csdpos,angspos,".",color="red",label="positive")
-            plt.legend()
+            ax=plotter.subplotter(fig,angles.index(j))
+            ax.plot(csdneg,angsneg,"x",color="blue",label="negative")
+            ax.plot(csdpos,angspos,".",color="red",label="positive")
+            ax.set_xticks(np.linspace(0,180,9))#x ticks are between 0-180, in obliques and cardinal angles
+            ax.tick_params(axis='both', which='major', labelsize=15)#major ticks are bigger labeled
+            ax.xaxis.set_major_locator(MultipleLocator(45))#major ticks are set at 0,90,180,...
+            ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+            ax.xaxis.set_minor_locator(MultipleLocator(22.5))#minor ticks are set at 45,135,..
+            ax.set_ylim(bottom=0,top=20)#y axis is between +-30
+            if angles.index(j)==7:            
+                ax.legend(loc="best", bbox_to_anchor=(1,1),fontsize=15)
     return symVal
 
 mlsym=symmetry_analyzer(mlSymDict)
 popvecsym=symmetry_analyzer(popvecSymDict)
-np.array(list(mlsym[1].values())).mean()
-np.array(list(popvecsym[1].values())).mean()
-np.array(list(mlsym[1].values())).mean()/np.array(list(popvecsym[1].values())).mean()
-np.array(list(mlsym[2].values())).mean()
-np.array(list(popvecsym[2].values())).mean()
-np.array(list(mlsym[2].values())).mean()/np.array(list(popvecsym[2].values())).mean()
+plt.figure()
+plt.title("RMS comparsion between decoders",y=1.08,fontsize=20)
+plt.xlabel("Absolute center surround angle difference [°]",fontsize=15)
+plt.ylabel("Average RMS",fontsize=15)
+plt.plot(mlsym[1].keys(),mlsym[1].values(),".",color="black",label="maximum likelihood")
+plt.plot(popvecsym[1].keys(),popvecsym[1].values(),".",color="red",label="population vector decoder")
+plt.xticks(np.linspace(0,315,8))#x ticks are between 0-180, in obliques and cardinal angles
+plt.tick_params(axis='both', which='major', labelsize=15)#major ticks are bigger labeled
+plt.legend(loc="best", bbox_to_anchor=(1,1),fontsize=15)
+plt.subplots_adjust(left=0.06, bottom=0.09, right=0.98, top=0.88, wspace=0.12, hspace=0.20)
 """
 IT SEEMS LIKE BETWEEN SURROUNDS (+-45°) THE ANGULAR SHIFT NEGATIVE AND POSITIVE VALUES FLIP.
 """
