@@ -18,6 +18,7 @@ import matplotlib.patches as mp
 import colclass as col
 from supplementary_functions import std2kappa, depth_modulator, plotter, param_dict
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter, AutoMinorLocator
+from time import sleep
 
 surrInt=(135,90,45,180,0,225,270,315)#The order of the surround stimuli angles is important for the subplotting.
 dec=["vm","vs","ml"]#decoders list, vm=von Mises fit, vs=population vector, ml=maximum likelihood
@@ -25,28 +26,50 @@ params=["maanshi","csdmaanshi","mianshi","csdmianshi","decprec"]#color tilt curv
 
 dictPar=param_dict(dec,params)#preallocate the dictionary of decoders and parameters
 
-def plot_adjuster():
+def plot_adjuster(manual=False):
     """Adjust the plot size automatically for each plot in successive order, atm it is optimized only for figure 5, this would but also work
     for other models.
     """
-    while True:#This line ensures the next color tilt curve is plotted when a keyboard button is pressed.
-        if plt.waitforbuttonpress(0):
-            plt.close()
-            break
-    
-    plt.subplots_adjust(left=0.16, bottom=0.09, right=0.74, top=0.88, wspace=0.05, hspace=0.08)
-    while True:#This line ensures the next color tilt curve is plotted when a keyboard button is pressed.
-        if plt.waitforbuttonpress(0):
-            plt.close()
-            break
-    
-    plt.subplots_adjust(left=0.14, bottom=0.09, right=0.8, top=0.88, wspace=0.1, hspace=0.1)
-    while True:#This line ensures the next color tilt curve is plotted when a keyboard button is pressed.
-        if plt.waitforbuttonpress(0):
-            plt.close()
-            break
-    return
-
+    if manual==True:
+        while True:#This line ensures the next color tilt curve is plotted when a keyboard button is pressed.
+            if plt.waitforbuttonpress(0):
+                plt.close()
+                break
+        
+        plt.subplots_adjust(left=0.16, bottom=0.09, right=0.74, top=0.88, wspace=0.05, hspace=0.08)
+        while True:#This line ensures the next color tilt curve is plotted when a keyboard button is pressed.
+            if plt.waitforbuttonpress(0):
+                plt.close()
+                break
+        
+        plt.subplots_adjust(left=0.14, bottom=0.09, right=0.8, top=0.88, wspace=0.1, hspace=0.1)
+        while True:#This line ensures the next color tilt curve is plotted when a keyboard button is pressed.
+            if plt.waitforbuttonpress(0):
+                plt.close()
+                break
+        return
+    else:
+        path=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\thesis_figures"
+        mng = plt.get_current_fig_manager()
+        mng.window.state("zoomed")
+        plt.savefig(path+"\\gs_depmod_tuning_curves.pdf")
+        plt.close()
+        
+        plt.subplots_adjust(left=0.16, bottom=0.09, right=0.74, top=0.88, wspace=0.05, hspace=0.08)
+        mng = plt.get_current_fig_manager()
+        mng.window.state("zoomed")
+        sleep(1)
+        plt.savefig(path+"\\gs_depmod_popact.pdf")
+        plt.close()
+        
+        plt.subplots_adjust(left=0.14, bottom=0.09, right=0.8, top=0.88, wspace=0.1, hspace=0.1)
+        mng = plt.get_current_fig_manager()
+        mng.window.state("zoomed")
+        sleep(1)
+        plt.savefig(path+"\\gs_depmod_tilt_curve.pdf")
+        plt.close()
+        return
+        
 def surr_analysis(surr,grType,depmod):#Make plot titles for each condition (bwType,depmod)!
     """Color tilt plotter function for the given model type:
         This function creates the plots of exemplary population activity at 100° center stimulus hue, tuning curves of the model units 
@@ -230,7 +253,7 @@ dictPargfDep=surr_analysis(surrInt,grType="gf",depmod=True)
 
 dictPargs=surr_analysis(surrInt,grType="gs",depmod=False) 
 dictPargsDep=surr_analysis(surrInt,grType="gs",depmod=True)#FIGURE 5 
-plot_adjuster()
+plot_adjuster()#Make automatic, that it saves the figure as PDF DONE, some documentation would be sweet
 
 """  
 These are the artifacts from last working session, where each title and axis labels were given manually. 

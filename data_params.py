@@ -200,28 +200,52 @@ def param_calculator(paraml,fltind,outind,rmsThres,dataPlot=False,deco="ml"):
             elif deco=="ml":
                 print("maximum likelihood decoder")
                 dec=col.decoder.ml(colMod.x,colMod.centery,colMod.resulty,colMod.unitTracker,avgSur=surrInt[j],dataFit=True)#the decoder
+            elif deco=="both":
+                print("both decoders at once")
+                dec1=col.decoder.vecsum(colMod.x,colMod.resulty,colMod.unitTracker,avgSur=surrInt[j],errNorm=True,centery=colMod.centery,dataFit=True)#the decoder vecsum
+                dec2=col.decoder.ml(colMod.x,colMod.centery,colMod.resulty,colMod.unitTracker,avgSur=surrInt[j],dataFit=True)#the decoder ml
             else:
                 pass
-            symDict[q].update({surrInt[j]:dec})
+
             ax=plotter.subplotter(fig,j)#subplot the color tilt for each surround
             if dataPlot==True:
                 ax.errorbar(dictTot[surrInt[j]]["angshi"].keys(),dictTot[surrInt[j]]["angshi"].values(),dictTot[surrInt[j]]["se"].values(),fmt='.',capsize=3,label=labmap[0],ecolor="gray",color="black")
             #data plot with errorbars (above line)
-            ax.plot(dec.centSurDif,dec.angShift,color=colMap[1],label=labmap[1])#model plot
-            ax.plot([0,0],[-25,25],color="black",linewidth=0.8)
-            ax.plot([-185,185],[0,0],color="black",linewidth=0.8)
-            ax.set_ylim(bottom=-25,top=25)#y axis limit +-25
-            ax.set_xlim([-185,185])
-            ax.set_xticks(np.linspace(-180,180,9))#x ticks between +-180 and ticks are at cardinal and oblique angles.
-            ax.set_yticks(np.linspace(-20,20,5))#x ticks between +-180 and ticks are at cardinal and oblique angles.
-            ax.tick_params(axis='both', which='major', labelsize=15)#major ticks are increazed in label size
-            ax.xaxis.set_major_locator(MultipleLocator(90))#major ticks at cardinal angles.
-            ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-            ax.xaxis.set_minor_locator(MultipleLocator(45))#minor ticks at obliques.
-            print("1 subplot done")
+            if deco=="both":
+                ax.plot(dec1.centSurDif,dec1.angShift,color="red",label="population vector")#model plot
+                ax.plot(dec2.centSurDif,dec2.angShift,color="black",label="maximum likelihood")#model plot
+                ax.plot([0,0],[-25,25],color="black",linewidth=0.8)
+                ax.plot([-185,185],[0,0],color="black",linewidth=0.8)
+                ax.set_ylim(bottom=-25,top=25)#y axis limit +-25
+                ax.set_xlim([-185,185])
+                ax.set_xticks(np.linspace(-180,180,9))#x ticks between +-180 and ticks are at cardinal and oblique angles.
+                ax.set_yticks(np.linspace(-20,20,5))#x ticks between +-180 and ticks are at cardinal and oblique angles.
+                ax.tick_params(axis='both', which='major', labelsize=15)#major ticks are increazed in label size
+                ax.xaxis.set_major_locator(MultipleLocator(90))#major ticks at cardinal angles.
+                ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+                ax.xaxis.set_minor_locator(MultipleLocator(45))#minor ticks at obliques.
+                print("1 subplot done")
+                
+            else:
+                symDict[q].update({surrInt[j]:dec})
+                ax.plot(dec.centSurDif,dec.angShift,color=colMap[1],label=labmap[1])#model plot
+                ax.plot([0,0],[-25,25],color="black",linewidth=0.8)
+                ax.plot([-185,185],[0,0],color="black",linewidth=0.8)
+                ax.set_ylim(bottom=-25,top=25)#y axis limit +-25
+                ax.set_xlim([-185,185])
+                ax.set_xticks(np.linspace(-180,180,9))#x ticks between +-180 and ticks are at cardinal and oblique angles.
+                ax.set_yticks(np.linspace(-20,20,5))#x ticks between +-180 and ticks are at cardinal and oblique angles.
+                ax.tick_params(axis='both', which='major', labelsize=15)#major ticks are increazed in label size
+                ax.xaxis.set_major_locator(MultipleLocator(90))#major ticks at cardinal angles.
+                ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+                ax.xaxis.set_minor_locator(MultipleLocator(45))#minor ticks at obliques.
+                print("1 subplot done")
         ax.legend(loc="best", bbox_to_anchor=(1,1),fontsize=20)#add the legend to the subplot in the very end, after all surrounds are plotted.
-        plt.subplots_adjust(left=0.07, bottom=0.09, right=0.86, top=0.95, wspace=0.1, hspace=0.13)
-        
+        if deco!="both":
+            plt.subplots_adjust(left=0.07, bottom=0.09, right=0.86, top=0.95, wspace=0.1, hspace=0.13)
+        else:
+            plt.subplots_adjust(left=0.07, bottom=0.11, right=0.73, top=0.95, wspace=0.12, hspace=0.13)
+            
         while True:#This line ensures the next color tilt curve is plotted when a keyboard button is pressed.
             if plt.waitforbuttonpress(0):
                 break
@@ -238,10 +262,13 @@ def param_calculator(paraml,fltind,outind,rmsThres,dataPlot=False,deco="ml"):
             else:
                 numa=1
                 a=input("continue?   ")
-    return  symDict
+    if deco!="both":
+        return  symDict
+    else:
+        return
 mlSymDict=param_calculator(mlParams,mlind,mlout,4)
 popvecSymDict=param_calculator(popVecParams,popvecind,popvecout,4.5,deco="vecsum")
-
+param_calculator(popVecParams,popvecind,popvecout,4.5,deco="both")
 def symmetry_analyzer(dicti):
     symVal={}
     angles=(135,90,45,180,0,225,270,315)

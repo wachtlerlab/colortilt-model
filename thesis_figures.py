@@ -20,6 +20,7 @@ import colclass as col
 from scipy import stats as st
 from supplementary_functions import std2kappa, depth_modulator, plotter, param_dict
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter, AutoMinorLocator
+path=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\thesis_figures"
 
 
 """
@@ -279,7 +280,7 @@ fig.text(0.528,0.61,"90",size=15)
 fig.text(0.379,0.61,"135",size=15)
 plt.title("Tuning curves of the best model",y=1.08,fontsize=20)#1st plot is the color tilt curve, subplots with different surrounds
 plt.xlabel("Center stimulus hue angle [°]",fontsize=15)
-plt.ylabel("Unit activity [a.u.]",fontsize=15,x=-0.1)
+plt.ylabel("Unit activity [a.u.]",fontsize=15,x=-0.07)
 surr=[135,90,45,180,0,225,270,315]
 for i in range(0,len(surr)):
     a=col.colmod(1,2.3,0.5,[1.2,0.9],bwType="gradient/sum",phase=22.5,avgSur=surr[i],depInt=[0.2,0.4],depmod=True,stdtransform=False)
@@ -311,6 +312,9 @@ for i in range(0,len(surr)):
     ax.xaxis.set_minor_locator(MultipleLocator(45))
     ax.set_xlim([0,360])
 plt.subplots_adjust(left=0.105, bottom=0.09, right=0.98, top=0.88, wspace=0.12, hspace=0.20)
+mng = plt.get_current_fig_manager()
+mng.window.state("zoomed")
+plt.savefig(path+"\\tuning_curves_best_model.pdf")
 """
 
 """
@@ -326,4 +330,12 @@ for j in range(23,len(a.centery)+1,23):
     plt.plot(a.x[np.where(a.x==0)[0][0]:np.where(a.x==360)[0][0]],a.centery[j-1][np.where(a.x==0)[0][0]:np.where(a.x==360)[0][0]],color="black",linewidth=1)
 plt.tick_params(axis='both', which='major', labelsize=15)
 plt.xticks(np.linspace(0,360,9))
+"""
+"""
+FIGURES TO PUT:
+Parameter distribution DONE BUT MANUAL
+Best fit of both models in same plot without data DONE BUT MANUAL
+Non-uniform tuning curves best fit ML DONE
+Parameter scan beschreiben (methods oder first sentence of the results scan subset.)
+Skype Freitag 14.00 (skype thomas.wachtler)
 """
