@@ -66,6 +66,8 @@ def param_calculator(paraml,fltind,outind,rmsThres,dataPlot=False,deco="ml"):
         decName="maximum likelihood"
     elif deco=="vecsum":
         decName="population vector"
+    elif deco=="both":
+        decName=None
     else:
         raise Exception("False decoder name given")
     """
@@ -217,8 +219,8 @@ def param_calculator(paraml,fltind,outind,rmsThres,dataPlot=False,deco="ml"):
                 ax.errorbar(dictTot[surrInt[j]]["angshi"].keys(),dictTot[surrInt[j]]["angshi"].values(),dictTot[surrInt[j]]["se"].values(),fmt='.',capsize=3,label=labmap[0],ecolor="gray",color="black")
             #data plot with errorbars (above line)
             if deco=="both":
-                ax.plot(dec1.centSurDif,dec1.angShift,color="red",label="population vector")#model plot
-                ax.plot(dec2.centSurDif,dec2.angShift,color="black",label="maximum likelihood")#model plot
+                ax.plot(dec1.centSurDif,dec1.angShift,color="green",label="population vector")#model plot
+                ax.plot(dec2.centSurDif,dec2.angShift,color="magenta",label="maximum likelihood")#model plot
                 ax.plot([0,0],[-25,25],color="black",linewidth=0.8)
                 ax.plot([-185,185],[0,0],color="black",linewidth=0.8)
                 ax.set_ylim(bottom=-25,top=25)#y axis limit +-25
