@@ -62,7 +62,12 @@ def param_calculator(paraml,fltind,outind,rmsThres,dataPlot=False,deco="ml"):
     difsm=[]#surround mod depth min-max difference
     cabw=[]#center average BW
     smad=[]#surround average mod depth
-    
+    if deco=="ml":
+        decName="maximum likelihood"
+    elif deco=="vecsum":
+        decName="population vector"
+    else:
+        raise Exception("False decoder name given")
     """
     calculation for fltrms/fltind parameters
     """
@@ -101,7 +106,7 @@ def param_calculator(paraml,fltind,outind,rmsThres,dataPlot=False,deco="ml"):
     colMap=["gray","red","blue"]#color map
     labmap=["rms>%s"%(rmsThres),"rms<%s"%(rmsThres),"best 10 models"]#label map
     fig = plt.figure()
-    plt.title("Parameter distribution of models",fontsize=18,y=1.08)
+    plt.title("Parameter distribution of models %s decoder"%(decName),fontsize=18,y=1.08)
     plt.xticks([])#main plot figure ticks are off
     plt.yticks([])#main plot figure ticks are off
     plt.box(False)#the frame of the main plot is off
@@ -143,7 +148,7 @@ def param_calculator(paraml,fltind,outind,rmsThres,dataPlot=False,deco="ml"):
     """
     i=0
     fig2 = plt.figure()
-    plt.title("Parameter distribution of models",y=1.08,fontsize=18)
+    plt.title("Parameter distribution of models %s decoder"%(decName),y=1.08,fontsize=18)
     plt.xticks([])
     plt.yticks([])
     plt.box(False)
@@ -269,6 +274,7 @@ def param_calculator(paraml,fltind,outind,rmsThres,dataPlot=False,deco="ml"):
 mlSymDict=param_calculator(mlParams,mlind,mlout,4)
 popvecSymDict=param_calculator(popVecParams,popvecind,popvecout,4.5,deco="vecsum")
 param_calculator(popVecParams,popvecind,popvecout,4.5,deco="both")
+
 def symmetry_analyzer(dicti):
     symVal={}
     angles=(135,90,45,180,0,225,270,315)
