@@ -331,6 +331,69 @@ for j in range(23,len(a.centery)+1,23):
 plt.tick_params(axis='both', which='major', labelsize=15)
 plt.xticks(np.linspace(0,360,9))
 """
+
+"""
+Manuscript figure 1:  Contextual modulation of population code units
+col1=col.colmod(1.5,1,0.5,[1,10],bwType="regular")
+fig=plt.figure()
+plt.xticks([])
+plt.yticks([])
+plt.box(False)
+ax1=fig.add_subplot(2,1,1)
+ax2=fig.add_subplot(2,1,2)
+for i in range(29,360,30):
+    if i==179:
+        col="blue"
+    else:
+        col="black"
+    ax1.plot(col1.x[np.where(col1.x==0)[0][0]:np.where(col1.x==360)[0][0]],col1.centery[i][np.where(col1.x==0)[0][0]:np.where(col1.x==360)[0][0]],color=col,linewidth=1)
+    ax2.plot(col1.x[np.where(col1.x==0)[0][0]:np.where(col1.x==360)[0][0]],col1.resulty[i][np.where(col1.x==0)[0][0]:np.where(col1.x==360)[0][0]],color=col,linewidth=1)
+ax1.axis("off")
+ax2.set_xticks(np.linspace(0,360,13))
+ax2.set_yticks([])
+ax2.tick_params(axis='both', which='major', labelsize=30)
+ax2.set_xlabel("Preferred hue angle [°]",fontsize=30)
+ax2.set_ylabel("Unit activity [a.u.]",fontsize=30)
+plt.gca().set(frame_on=False)
+mng = plt.get_current_fig_manager()
+mng.window.state("zoomed")
+plt.pause(0.1)
+plt.subplots_adjust(left=0.04, bottom=0.14, right=1, top=1, wspace=0, hspace=0.02)
+plt.savefig(path+"\\tuning_curves_unimod.pdf")
+"""
+
+"""
+Manuscript figure 2:  Population activity thingy (results first figure)
+stimang=180
+tabStep=5
+col1=col.colmod(1.5,1,0.5,[1,10],bwType="regular",avgSur=135)
+dec1m=col.decoder.ml(col1.x,col1.centery,col1.resulty,col1.unitTracker,avgSur=135,tabStep=tabStep)#!TABSTEP here 0.5, so indexes are to be doubled
+popNS=col.decoder.nosurround(stimang,col1.x,col1.centery)#Population activity without surround
+popS=col.decoder.nosurround(stimang,col1.x,col1.resulty)#Population activity without surround
+fig=plt.figure()
+plt.ylabel("Activation [a.u.]",fontsize=20)
+plt.xlabel("Hue angle [°]",fontsize=20)
+plt.tick_params(axis='both', which='major', labelsize=20)
+ax1=plt.gca()
+ax1.xaxis.set_major_locator(MultipleLocator(45))
+ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+ax1.xaxis.set_minor_locator(MultipleLocator(22.5))
+surmod=(1-col1.surroundy[np.where(col1.x==1)[0][0]:np.where(col1.x==361)[0][0]:10])*max(popNS.noSur)
+plt.plot(col1.unitTracker,popNS.noSur,color="green",label="Population response")
+plt.plot(col1.unitTracker,popS.noSur,color="red",label="Modulated response")
+plt.plot(col1.unitTracker,surmod,color="blue",label="Surround modulation")
+plt.plot(col1.unitTracker,dec1m.surDecoder[int(list(col1.unitTracker).index(stimang)/(tabStep/10))],color="black",linestyle="dashed",label="Decoder's best fit")
+plt.legend(prop={'size':20})
+
+plt.gca().set(frame_on=True)
+mng = plt.get_current_fig_manager()
+mng.window.state("zoomed")
+plt.pause(0.1)
+plt.subplots_adjust(left=0.1, bottom=0.1, right=0.99, top=1, wspace=0, hspace=0.02)
+fig.text(0.53,0.965,"180°",size=20,color="green")
+fig.text(0.12,0.89,"135°",size=20,color="blue")
+plt.savefig(path+"\\popact_fig.pdf")
+"""
 """
 FIGURES TO PUT:
 Parameter distribution DONE BUT MANUAL

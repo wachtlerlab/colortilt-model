@@ -132,22 +132,23 @@ class decoder:
         modulation. The decoder subclass inputs are the specific outputs of the colmod.
     """
     class nosurround:
-        """Return the population activity without surround modulation
+        """Return the population activity with/out surround modulation
         """
-        def __init__(self,stimulusAngle,x,centery):
+        def __init__(self,stimulusAngle,x,act):
             """Parameters
             -------------
             stimulusAngle: float. The hue angle of the center stimulus.
             x: array. The colmod.x variable should be given here
-            centery: array. The colmod.centery variable should be given here.
+            act: array. The activity of interest, can be population activity without surround modulation (colmod.centery) 
+            or population activity with surround modulation (colmod.resulty)
             
             Returns
             -------
             noSur: list. The population activity for the given center stimulus hue angle without surround suppression.
             """
             self.noSur=[]
-            for i in range(0,len(centery)):
-                self.noSur.append(centery[i][np.where(x==stimulusAngle)[0][0]])
+            for i in range(0,len(act)):
+                self.noSur.append(act[i][np.where(x==stimulusAngle)[0][0]])
     
     class vecsum:
         """The population vector decoder (Georgopoulos et al. 1986):
