@@ -18,6 +18,8 @@ import colclass as col
 from supplementary_functions import std2kappa, depth_modulator, plotter, param_dict, circler
 import cmath as c
 from scipy import optimize as op
+path=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\thesis_figures"
+
 """
 Take the best fit color model to start with
 """
@@ -127,10 +129,12 @@ for i in range(1,len(pun.popSurVec)+1):
     plt.title("Tuning curve maximum activity vectors uniform model",fontsize=20)
     
     plt.figure(7)#non uniform
-    plt.plot(vecdict[i]["real"][list(colmod.unitTracker).index(i)],vecdict[i]["imag"][list(colmod.unitTracker).index(i)],".",markersize=1,color="black")
+    plt.plot(vecdict[i]["real"][list(colmod.unitTracker).index(i)],vecdict[i]["imag"][list(colmod.unitTracker).index(i)],".",markersize=3,color="black")
+    if i==360:
+            plt.plot(vecdict[i]["real"][list(colmod.unitTracker).index(i)],vecdict[i]["imag"][list(colmod.unitTracker).index(i)],".",markersize=3,color="black",label="unit vector")
     nunRealMax.append(vecdict[i]["real"][list(colmod.unitTracker).index(i)])
     nunImagMax.append(vecdict[i]["imag"][list(colmod.unitTracker).index(i)])
-    plt.title("Tuning curve maximum activity vectors non-uniform model",fontsize=20)
+    plt.title("Maximum activity vectors of the units",fontsize=30)
 
 """
 Analyse the circularity of the vector plots for uniform and non-uniform models
@@ -178,11 +182,20 @@ circNunf=circler(radBest)#non uniform model vector ellipsis best circle fit radi
 
 plt.figure(6) 
 plt.plot(*circUn)
-plt.figure(7)
+fig=plt.figure(7)#The unit vectors are plotted above in the for loop
 plt.plot(*circNunr,color="red",label="x radius")
 plt.plot(*circNuni,color="green",label="y radius")
 plt.plot(*circNunf,color="blue",label="best fit circle")
-plt.legend()
+plt.xticks([])
+plt.yticks([])
+plt.ylabel("Vector y value",fontsize=30)
+plt.xlabel("Vector x value",fontsize=30)
+plt.legend(fontsize=20,loc="best")
+plt.gca().set_aspect('equal', adjustable='box')
+fig.set_size_inches(8.19, 7.45)
+plt.pause(0.1)
+plt.savefig(path+"\\popvec_nonuniform_circfit.pdf")
+
 """
 Which one makes most sense? Fitting a circle to the ellipse of non-uniform model or using either the short or long radius of the ellipse 
 as the circle radius?
@@ -222,14 +235,23 @@ for i in range(0,len(pvd.popSurVec)):
         decodedAngy[i]=decodedAngy[i]+360
         
 plt.figure(8)
-plt.title("Decoder errors for different situations",fontsize=20)    
-plt.plot(pvd.centSurDif,pvd.angShift,".",markersize=1,color="black",label="before correction")#decoding bias +-3
-plt.plot(pvd.centSurDif,decodedAngf-np.linspace(1,360,360),".",markersize=1,color="blue",label="after correction (circle fit)")#max decoder bias is reduced to 0.5264918997367829    
-plt.plot(pvd.centSurDif,decodedAngx-np.linspace(1,360,360),".",markersize=1,color="red",label="after correction (x radius)")#max decoder bias is reduced to 0.5264918998461212    
-plt.plot(pvd.centSurDif,decodedAngy-np.linspace(1,360,360),".",markersize=1,color="green",label="after correction (y radius)")#max decoder bias is reduced to 0.5264918998461496    
+plt.title("Decoder errors for different situations",fontsize=30)
+plt.ylabel("Decoding error [°]",fontsize=30)
+plt.xlabel("Center hue [°]",fontsize=30)
+plt.tick_params(axis='both', which='major', labelsize=30)
+plt.plot(pvd.centSurDif,pvd.angShift,"o",markersize=3,color="purple",label="before correction")#decoding bias +-3
+plt.plot(pvd.centSurDif,decodedAngf-np.linspace(1,360,360),"*",markersize=3,color="blue")#max decoder bias is reduced to 0.5264918997367829    
+plt.plot(pvd.centSurDif,decodedAngx-np.linspace(1,360,360),"x",markersize=3,color="red")#max decoder bias is reduced to 0.5264918998461212    
+plt.plot(pvd.centSurDif,decodedAngy-np.linspace(1,360,360),"v",markersize=3,color="orange",label="after correction")#max decoder bias is reduced to 0.5264918998461496    
 plt.xticks(np.linspace(-180,180,9))
 plt.plot([-180,180],[0,0],color="gray")
-plt.legend()
+plt.legend(fontsize=20,loc="best")
+mng = plt.get_current_fig_manager()
+mng.window.state("zoomed")
+plt.pause(0.1)
+plt.subplots_adjust(left=0.08, bottom=0.12, right=0.99, top=0.93, wspace=0, hspace=0.02)
+plt.savefig(path+"\\popvec_errorcorrection.pdf")
+
 """
 Different corrections (best circle fit, x radius or y radius of the ellipse show exactly the same performance of decoder error)
 """

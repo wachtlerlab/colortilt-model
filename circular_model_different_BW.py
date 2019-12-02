@@ -15,6 +15,7 @@ sys.path.insert(0,r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\py
 from supplementary_functions import std2kappa, param_dict, plotter
 import colclass
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter, AutoMinorLocator
+path=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\thesis_figures"
 
 '''
 The Bandwiths of the center units vary: for 0° BW 60°, then increasing gradually to 70° until 90° unit then same thing again!
@@ -162,10 +163,10 @@ def surround_plotter(surr,grType,depmod=False):
             ax1.xaxis.set_major_locator(MultipleLocator(90))
             ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
             ax1.xaxis.set_minor_locator(MultipleLocator(45))
-            ax1.plot(vsgsns.centSurDif,vsgsns.angShift,color="red",label="vector sum")
-            ax1.plot(vmgsns.centSurDif,vmgsns.angShift,color="blue",label="von Mises fit")
-            ax1.plot(mlgsns.centSurDif,mlgsns.angShift,color="black",label="maximum likelihood")
-            ax1.plot(mfgsns.centSurDif,mfgsns.angShift,color="green",label="maximum fire rate")
+            ax1.plot(vsgsns.centSurDif,vsgsns.angShift,color="green",label="vector sum")
+            ax1.plot(vmgsns.centSurDif,vmgsns.angShift,color="teal",label="von Mises fit")
+            ax1.plot(mlgsns.centSurDif,mlgsns.angShift,color="magenta",label="maximum likelihood")
+            ax1.plot(mfgsns.centSurDif,mfgsns.angShift,color="brown",label="maximum fire rate")
             if i==7:
                 ax1.legend(loc="best", bbox_to_anchor=(1,1),fontsize=15)
                 #fig.tight_layout()
@@ -188,8 +189,36 @@ def surround_plotter(surr,grType,depmod=False):
 surrInt=(135,90,45,180,0,225,270,315)
 surrParfr=surround_plotter(surr=surrInt,grType="gf")#Maximum activity normalized model. FIGURE 3
 plt.subplots_adjust(left=0.06, bottom=0.09, right=0.8, top=0.88, wspace=0.14, hspace=0.15)
-surrParSum=surround_plotter(surr=surrInt,grType="gs")#Total activity normalized model FIGURE 4
+surrParSum=surround_plotter(surr=surrInt,grType="gs",depmod=True)#Total activity normalized model FIGURE 4
 plt.subplots_adjust(left=0.06, bottom=0.09, right=0.8, top=0.88, wspace=0.14, hspace=0.15)
+
+
+"""
+Plot the decoding error on a single surround condition (surround=0 so that center hue is also in absolute angles)
+"""
+decoders=["vs","vm","ml","mf"]
+decobjs=[]
+for i in decoders:
+    decobjs.append(col_BW_wrapper(0,"gradient/sum",i))#create the decoder objects for the model
+labmap=["population vector","von Mises fit","maximum likelihood","maximum fire rate"]
+colmap=["green","teal","magenta","brown"]
+plt.figure()
+plt.xlabel("Center-surround hue difference [°]",fontsize=30)
+plt.ylabel("Decoding error [°]",fontsize=30)
+ax=plt.gca()
+ax.xaxis.set_major_locator(MultipleLocator(45))
+ax.xaxis.set_minor_locator(MultipleLocator(22.5))
+plt.tick_params(axis='both', which='major', labelsize=20)
+plt.xticks(np.linspace(-180,180,9))
+for i in range(0,len(decobjs)):
+    print(i)
+    plt.plot(decobjs[i].centSurDif,decobjs[i].angShift,color=colmap[i],label=labmap[i])
+plt.legend(loc="best",fontsize=20)
+mng = plt.get_current_fig_manager()
+mng.window.state("zoomed")
+plt.pause(0.1)
+plt.subplots_adjust(left=0.07, bottom=0.11, right=0.99, top=0.99, wspace=0, hspace=0.02)
+plt.savefig(path+"\\decoding_error.pdf")
 """
 Important parameters of no surround modulation: max/min ang shift and corresponding csds
 for fr normalized:

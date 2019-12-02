@@ -8,6 +8,7 @@ Created on Fri Aug 23 13:52:03 2019
 Analysis of the models and parameters filtered in the data_analysis.py file.
 """
 import pickle
+import json
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
@@ -16,8 +17,11 @@ import colclass as col
 from supplementary_functions import std2kappa, depth_modulator, plotter, param_dict
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter, AutoMinorLocator
 from mpl_toolkits.mplot3d import Axes3D
+path=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\thesis_figures"
+from datetime import date
 
 dictTot=pickle.load(open("dicttot.pckl","rb"))#Dictionary of the subject average.
+date=date.today()
 
 def file_opener(dataName,rmsThres): 
     paraml=pickle.load(open("%s.pckl"%(dataName),"rb"))#Pickle file of the scanned parameters. This name should be changed according to the file wished to be analyzed.
@@ -203,14 +207,14 @@ def param_calculator(paraml,fltind,outind,rmsThres,dataPlot=False,deco="ml"):
                               phase=22.5,avgSur=surrInt[j],depInt=[paraml[i]["depb"],paraml[i]["depu"]],depmod=True,stdtransform=False)#The model      
             if deco=="vecsum":
                 print("population vector decoder")
-                dec=col.decoder.vecsum(colMod.x,colMod.resulty,colMod.unitTracker,avgSur=surrInt[j],errNorm=True,centery=colMod.centery,dataFit=True)#the decoder
+                dec=col.decoder.vecsum(colMod.x,colMod.resulty,colMod.unitTracker,avgSur=surrInt[j],errNorm=True,centery=colMod.centery)#the decoder
             elif deco=="ml":
                 print("maximum likelihood decoder")
-                dec=col.decoder.ml(colMod.x,colMod.centery,colMod.resulty,colMod.unitTracker,avgSur=surrInt[j],dataFit=True)#the decoder
+                dec=col.decoder.ml(colMod.x,colMod.centery,colMod.resulty,colMod.unitTracker,avgSur=surrInt[j],tabStep=1)#the decoder
             elif deco=="both":
                 print("both decoders at once")
-                dec1=col.decoder.vecsum(colMod.x,colMod.resulty,colMod.unitTracker,avgSur=surrInt[j],errNorm=True,centery=colMod.centery,dataFit=True)#the decoder vecsum
-                dec2=col.decoder.ml(colMod.x,colMod.centery,colMod.resulty,colMod.unitTracker,avgSur=surrInt[j],dataFit=True)#the decoder ml
+                dec1=col.decoder.vecsum(colMod.x,colMod.resulty,colMod.unitTracker,avgSur=surrInt[j],errNorm=True,centery=colMod.centery)#the decoder vecsum
+                dec2=col.decoder.ml(colMod.x,colMod.centery,colMod.resulty,colMod.unitTracker,avgSur=surrInt[j],tabStep=1)#the decoder ml
             else:
                 pass
 
@@ -249,7 +253,7 @@ def param_calculator(paraml,fltind,outind,rmsThres,dataPlot=False,deco="ml"):
                 print("1 subplot done")
         ax.legend(loc="best", bbox_to_anchor=(1,1),fontsize=20)#add the legend to the subplot in the very end, after all surrounds are plotted.
         if deco!="both":
-            plt.subplots_adjust(left=0.07, bottom=0.09, right=0.86, top=0.95, wspace=0.1, hspace=0.13)
+            plt.subplots_adjust(left=0.07, bottom=0.09, right=0.86, top=0.95, wspace=0.14, hspace=0.1)
         else:
             plt.subplots_adjust(left=0.07, bottom=0.11, right=0.73, top=0.95, wspace=0.12, hspace=0.13)
             
@@ -273,63 +277,231 @@ def param_calculator(paraml,fltind,outind,rmsThres,dataPlot=False,deco="ml"):
         return  symDict
     else:
         return
-mlSymDict=param_calculator(mlParams,mlind,mlout,4)
-popvecSymDict=param_calculator(popVecParams,popvecind,popvecout,4.5,deco="vecsum")
-param_calculator(popVecParams,popvecind,popvecout,4.5,deco="both")
+
+#param_calculator(popVecParams,popvecind,popvecout,4.5,deco="both",dataPlot=True)
+
+#Same trick as before, try to open the pckl file, if not create one
+try: 
+    with open('dictionaries_2019-11-17.json',"rb") as file:
+        datDicts=json.load(file)
+except FileNotFoundError:    
+    print("forming the dictionaries")
+    mlSymDict=param_calculator(mlParams,mlind,mlout,4)
+    popvecSymDict=param_calculator(popVecParams,popvecind,popvecout,4.5,deco="vecsum")
+    jsondict={"ml":{},"vecsum":{}}
+    for i in list(mlSymDict[1].keys()):
+        csdml=mlSymDict[1][i].centSurDif
+        angsml=np.concatenate([*mlSymDict[1][i].angShift]).tolist()#to merge all values to a single array
+        csdvs=[float(i) for i in popvecSymDict[1][i].centSurDif] #one liner to convert integers to float (json creates problems)
+        angsvs=popvecSymDict[1][i].angShift
+        jsondict["ml"].update({i:{}})
+        jsondict["vecsum"].update({i:{}})
+        jsondict["ml"][i].update({"csd":csdml})
+        jsondict["ml"][i].update({"angs":angsml})
+        jsondict["vecsum"][i].update({"csd":csdvs})
+        jsondict["vecsum"][i].update({"angs":angsvs})
+    print("creating the json file")
+    with open('dictionaries_%s.json'%(date), 'w') as f:
+        json.dump(jsondict, f)
+    print("json file is created")
+except EOFError:    
+    mlSymDict=param_calculator(mlParams,mlind,mlout,4)
+    popvecSymDict=param_calculator(popVecParams,popvecind,popvecout,4.5,deco="vecsum")    
+    jsondict={"ml":{},"vecsum":{}}
+    for i in list(mlSymDict[1].keys()):
+        csdml=mlSymDict[1][i].centSurDif
+        angsml=np.concatenate([*mlSymDict[1][i].angShift]).tolist()#to merge all values to a single array
+        csdvs=[float(i) for i in popvecSymDict[1][i].centSurDif] #one liner to convert integers to float (json creates problems)
+        angsvs=popvecSymDict[1][i].angShift
+        jsondict["ml"].update({i:{}})
+        jsondict["vecsum"].update({i:{}})
+        jsondict["ml"][i].update({"csd":csdml})
+        jsondict["ml"][i].update({"angs":angsml})
+        jsondict["vecsum"][i].update({"csd":csdvs})
+        jsondict["vecsum"][i].update({"angs":angsvs})
+    with open('dictionariess_%s.json'%(date), 'w') as f:
+        json.dump(jsondict, f)
+    print("json file is filled")
+
+"""
+load json file:
+with open('dictionariess_2019-11-17.json',"rb") as file:
+data=json.load(file)
+"""
+
+"""
+Best model different decoders RMS plots relative to different surrounds
+"""
+mlbestRMS=mlParams[mlind[0]]["dif"]
+pvbestRMS=popVecParams[popvecind[0]]["dif"]
+ax=plt.subplot(111)
+ax.bar(np.array(list(mlbestRMS.keys()))-2.5,list(mlbestRMS.values()), width=5, color="magenta", align="center",label="Maximum likelihood")
+ax.bar(np.array(list(mlbestRMS.keys()))+2.5,list(pvbestRMS.values()), width=5, color="green", align="center",label="Population vector")
+ax.tick_params(axis='both', which='major', labelsize=25)
+ax.set_xticks(np.linspace(0,315,8))
+ax.set_xlabel("Surround hue angle [°]",fontsize=30)
+ax.set_ylabel("RMS between data and model",fontsize=30)
+plt.legend(loc="best",fontsize=20)
+mng = plt.get_current_fig_manager()
+mng.window.state("zoomed")
+plt.pause(0.1)
+plt.subplots_adjust(left=0.06, bottom=0.12, right=0.99, top=0.99, wspace=0, hspace=0)
+plt.savefig(path+"\\decoder_models_comparison.pdf")
+#mlSymDict=param_calculator(mlParams,mlind,mlout,4)
+#popvecSymDict=param_calculator(popVecParams,popvecind,popvecout,4.5,deco="vecsum")
 
 def symmetry_analyzer(dicti):
-    symVal={}
+    symVal={"ml":{},"vecsum":{}}
     angles=(135,90,45,180,0,225,270,315)
-    try: 
-        str(dicti).index("vecsum")
-        name="population vector decoder"
-    except ValueError:
-        name="maximum likelihood decoder"
+    if dicti==dictTot:
+        name="Empirical data"#The data has to be reshaped, that RMS is calculated for
+                             #each individual plot, then the average is taken for the total
+        symVal={"rms":{},"std":{}}#avgse is averaged standart error
+        
+        fig=plotter.plot_template(auto=True)
+        plt.title("Symmetry analysis of %s"%(name),y=1.08,fontsize=30)
+        plt.xlabel("Absolute center surround angle difference [°]",fontsize=30)
+        plt.ylabel("Absolute hue shift [°]",fontsize=30)
+        for i in range(0,len(dicti)):
+            csdneg=np.flip(abs(np.array(list(dicti[angles[i]]["angshi"].keys())))[0:7],0)
+            angsneg=np.flip(abs(np.array(list(dicti[angles[i]]["angshi"].values())))[0:7],0)
+            negse=np.flip(abs(np.array(list(dicti[angles[i]]["se"].values())))[0:7],0)#standard error values at negative side., dont use 
+                                                                              #it for the time being, ask Thomas first how to get along 
+                                                                              #with it
+            
+            csdpos=np.array(list(dicti[angles[i]]["angshi"].keys()))[8:-1]
+            angspos=np.array(list(dicti[angles[i]]["angshi"].values()))[8:-1]
+            posse=np.array(list(dicti[angles[i]]["se"].values()))[8:-1]
+            
+            rms=np.sqrt(((angsneg-angspos)**2).mean())
+            sd=np.std(abs(angsneg-angspos))#the standart deviation of the angle difference between halves (all positive)
+            symVal["rms"].update({angles[i]:rms})
+            symVal["std"].update({angles[i]:sd})
+            
+            ax=plotter.subplotter(fig,i)
+            ax.errorbar(csdneg,angsneg,negse,fmt='x',capsize=3,markersize=5,label="negative",ecolor="blue",color="blue")
+            ax.errorbar(csdpos,angspos,posse,fmt='.',capsize=3,markersize=5,label="positive",ecolor="red",color="red")
+
+            #ax.plot(csdneg,angsneg,"x",color="blue",label="negative",markersize=10)
+            #ax.plot(csdpos,angspos,".",color="red",label="positive",markersize=10)
+            ax.set_xticks(np.linspace(0,180,9))#x ticks are between 0-180, in obliques and cardinal angles
+            ax.tick_params(axis='both', which='major', labelsize=20)#major ticks are bigger labeled
+            ax.xaxis.set_major_locator(MultipleLocator(45))#major ticks are set at 0,90,180,...
+            ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+            ax.xaxis.set_minor_locator(MultipleLocator(22.5))#minor ticks are set at 45,135,..
+            ax.set_ylim(bottom=-3,top=25)#y axis is between +-30
+            if i==7:            
+                ax.legend(loc="best",bbox_to_anchor=(1,1),fontsize=20)
+                mng = plt.get_current_fig_manager()
+                mng.window.state("zoomed")
+                plt.pause(0.1)
+        return symVal
+    
+    else:
+        symVal={"ml":{},"vecsum":{}}
+        for i in ("ml","vecsum"):
+            if i=="ml":
+                name="maximum likelihood decoder"
+            else:
+                name="population vector decoder"
+            fig=plotter.plot_template(auto=True)
+            plt.title("Symmetry analysis of %s"%(name),y=1.08,fontsize=30)
+            plt.xlabel("Absolute center surround angle difference [°]",fontsize=30)
+            plt.ylabel("Absolute hue shift [°]",fontsize=30)
+            
+            for j in (135,90,45,180,0,225,270,315):
+                if j<=180 and i=="vecsum" or j<180:
+                    csdneg=np.flip(abs(np.array(dicti[i]["%s"%(j)]["csd"][0:dicti[i]["%s"%(j)]["csd"].index(0)])),0)#center surround differences are transformed into absolute values.
+                    angsneg=np.flip(abs(np.array(dicti[i]["%s"%(j)]["angs"][0:dicti[i]["%s"%(j)]["csd"].index(0)])),0)#angular shifts are transformed into absolute values.
+                    csdpos=np.array(dicti[i]["%s"%(j)]["csd"][dicti[i]["%s"%(j)]["csd"].index(0)+1:-1])
+                    angspos=np.array(dicti[i]["%s"%(j)]["angs"][dicti[i]["%s"%(j)]["csd"].index(0)+1:-1])   
+                else:
+                    csdneg=np.flip(abs(np.array(dicti[i]["%s"%(j)]["csd"][1:dicti[i]["%s"%(j)]["csd"].index(0)])),0)#center surround differences are transformed into absolute values.
+                    angsneg=np.flip(abs(np.array(dicti[i]["%s"%(j)]["angs"][1:dicti[i]["%s"%(j)]["csd"].index(0)])),0)#angular shifts are transformed into absolute values.
+                    csdpos=np.array(dicti[i]["%s"%(j)]["csd"][dicti[i]["%s"%(j)]["csd"].index(0)+1:])
+                    angspos=np.array(dicti[i]["%s"%(j)]["angs"][dicti[i]["%s"%(j)]["csd"].index(0)+1:])   
+                rms=np.sqrt(((angsneg-angspos)**2).mean())
+                symVal[i].update({j:rms})
+                ax=plotter.subplotter(fig,angles.index(j))
+                ax.plot(csdneg,angsneg,"x",color="blue",label="negative",markersize=5)
+                ax.plot(csdpos,angspos,".",color="red",label="positive",markersize=5)
+                ax.set_xticks(np.linspace(0,180,9))#x ticks are between 0-180, in obliques and cardinal angles
+                ax.tick_params(axis='both', which='major', labelsize=20)#major ticks are bigger labeled
+                ax.xaxis.set_major_locator(MultipleLocator(45))#major ticks are set at 0,90,180,...
+                ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+                ax.xaxis.set_minor_locator(MultipleLocator(22.5))#minor ticks are set at 45,135,..
+                ax.set_ylim(bottom=0,top=20)#y axis is between +-20
+                if angles.index(j)==7:            
+                    ax.legend(loc="best", bbox_to_anchor=(1,1),fontsize=15)
+                    mng = plt.get_current_fig_manager()
+                    mng.window.state("zoomed")
+                    plt.pause(0.1)
+        return symVal
+          
+    """            
+    else:
+        try: 
+            str(dicti).index("vecsum")
+            name="population vector decoder"
+        except ValueError:
+            name="maximum likelihood decoder"
     for i in range(1,len(dicti)+1):
         symVal.update({i:{}})
         fig=plotter.plot_template(auto=True)
-        plt.title("Symmetry analysis of %s"%(name),y=1.08,fontsize=20)
-        plt.xlabel("Absolute center surround angle difference [°]",fontsize=15)
-        plt.ylabel("Absolute hue shift [°]",fontsize=15)
+        plt.title("Symmetry analysis of %s"%(name),y=1.08,fontsize=30)
+        plt.xlabel("Absolute center surround angle difference [°]",fontsize=20)
+        plt.ylabel("Absolute hue shift [°]",fontsize=20)
 
         for j in (135,90,45,180,0,225,270,315):
-            if j<180:
-                csdneg=np.flip(abs(np.array(dicti[i][j].centSurDif[0:7])),0)#center surround differences are transformed into absolute values.
-                angsneg=np.flip(abs(np.array(dicti[i][j].angShift[0:7])),0)#angular shifts are transformed into absolute values.
-                csdpos=np.array(dicti[i][j].centSurDif[8:15])
-                angspos=np.array(dicti[i][j].angShift[8:15])
+            if j>=180 and name=="maximum likelihood decoder" or j>180:
+                csdneg=np.flip(abs(np.array(dicti[i][j].centSurDif[1:dicti[i][j].centSurDif.index(0)])),0)#center surround differences are transformed into absolute values.
+                angsneg=np.flip(abs(np.array(dicti[i][j].angShift[1:dicti[i][j].centSurDif.index(0)])),0)#angular shifts are transformed into absolute values.
+                csdpos=np.array(dicti[i][j].centSurDif[dicti[i][j].centSurDif.index(0)+1:])
+                angspos=np.array(dicti[i][j].angShift[dicti[i][j].centSurDif.index(0)+1:])
             else:
-                csdneg=np.flip(abs(np.array(dicti[i][j].centSurDif[1:8])),0)#center surround differences are transformed into absolute values.
-                angsneg=np.flip(abs(np.array(dicti[i][j].angShift[1:8])),0)#angular shifts are transformed into absolute values.
-                csdpos=np.array(dicti[i][j].centSurDif[9:16])
-                angspos=np.array(dicti[i][j].angShift[9:16])                
+                csdneg=np.flip(abs(np.array(dicti[i][j].centSurDif[0:dicti[i][j].centSurDif.index(0)])),0)#center surround differences are transformed into absolute values.
+                angsneg=np.flip(abs(np.array(dicti[i][j].angShift[0:dicti[i][j].centSurDif.index(0)])),0)#angular shifts are transformed into absolute values.
+                csdpos=np.array(dicti[i][j].centSurDif[dicti[i][j].centSurDif.index(0)+1:-1])
+                angspos=np.array(dicti[i][j].angShift[dicti[i][j].centSurDif.index(0)+1:-1])
             rms=np.sqrt(((angsneg-angspos)**2).mean())
             symVal[i].update({j:rms})
             ax=plotter.subplotter(fig,angles.index(j))
-            ax.plot(csdneg,angsneg,"x",color="blue",label="negative")
-            ax.plot(csdpos,angspos,".",color="red",label="positive")
+            ax.plot(csdneg,angsneg,"x",color="blue",label="negative",markersize=10)
+            ax.plot(csdpos,angspos,".",color="red",label="positive",markersize=10)
             ax.set_xticks(np.linspace(0,180,9))#x ticks are between 0-180, in obliques and cardinal angles
             ax.tick_params(axis='both', which='major', labelsize=15)#major ticks are bigger labeled
             ax.xaxis.set_major_locator(MultipleLocator(45))#major ticks are set at 0,90,180,...
             ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
             ax.xaxis.set_minor_locator(MultipleLocator(22.5))#minor ticks are set at 45,135,..
-            ax.set_ylim(bottom=0,top=20)#y axis is between +-30
+            ax.set_ylim(bottom=0,top=20)#y axis is between +-20
             if angles.index(j)==7:            
                 ax.legend(loc="best", bbox_to_anchor=(1,1),fontsize=15)
+                mng = plt.get_current_fig_manager()
+                mng.window.state("zoomed")
+                plt.pause(0.1)
+                plt.savefig(path+"\\symmetry_analysis_%s.pdf"%(name))
     return symVal
-
-mlsym=symmetry_analyzer(mlSymDict)
-popvecsym=symmetry_analyzer(popvecSymDict)
+    """
+datsym=symmetry_analyzer(dictTot)
+decsym=symmetry_analyzer(datDicts)
+mlsym=decsym["ml"]
+popvecsym=decsym["vecsum"]
 plt.figure()
-plt.title("RMS comparsion between decoders",y=1.08,fontsize=20)
-plt.xlabel("Absolute center surround angle difference [°]",fontsize=15)
-plt.ylabel("Average RMS",fontsize=15)
-plt.plot(mlsym[1].keys(),mlsym[1].values(),".",color="black",label="maximum likelihood")
-plt.plot(popvecsym[1].keys(),popvecsym[1].values(),".",color="red",label="population vector decoder")
-plt.xticks(np.linspace(0,315,8))#x ticks are between 0-180, in obliques and cardinal angles
-plt.tick_params(axis='both', which='major', labelsize=15)#major ticks are bigger labeled
-plt.legend(loc="best", bbox_to_anchor=(1,1),fontsize=15)
-plt.subplots_adjust(left=0.06, bottom=0.09, right=0.98, top=0.88, wspace=0.12, hspace=0.20)
+plt.title("Symmetry comparsion between decoders and data",y=1.08,fontsize=30)
+plt.xlabel("Absolute center surround angle difference [°]",fontsize=30)
+plt.ylabel("Average symmetry difference",fontsize=30)
+#plt.ylim(0.1,2.5)
+plt.plot(mlsym.keys(),mlsym.values(),".",color="magenta",label="maximum likelihood",markersize=15)
+plt.plot(popvecsym.keys(),popvecsym.values(),".",color="green",label="population vector decoder",markersize=15)
+plt.errorbar(datsym["rms"].keys(),datsym["rms"].values(),datsym["std"].values(),fmt='.',capsize=3,markersize=15,label="empirical data",ecolor="black",color="black")
+plt.xticks(np.linspace(0,315,8))
+plt.tick_params(axis='both', which='major', labelsize=20)#major ticks are bigger labeled
+plt.legend(loc="best",fontsize=20)
+plt.subplots_adjust(left=0.06, bottom=0.12, right=0.99, top=0.88, wspace=0, hspace=0)
+mng = plt.get_current_fig_manager()
+mng.window.state("zoomed")
+plt.pause(0.1)
+plt.savefig(path+"\\symmetry_decoder_comparison.pdf")
 """
 IT SEEMS LIKE BETWEEN SURROUNDS (+-45°) THE ANGULAR SHIFT NEGATIVE AND POSITIVE VALUES FLIP.
 """
@@ -343,9 +515,10 @@ for i in np.linspace(0,315,8):
     print(np.mean(kelang[int(i/45)]/np.array(list(dictTot[i]["se"].values()))))
     se.append(np.mean(kelang[int(i/45)]/np.array(list(dictTot[i]["se"].values()))))
 """
-
+plt.show()
 '''
 *Development notes
 MAKE ALSO THE HISTOGRAM BETTER, WITH AXIS NAMES ETC!
 GIVE MEAN AND VARIANCE VALUES FOR EACH PARAMETER BASED ON BEST 10 FITS
 '''
+

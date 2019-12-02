@@ -34,34 +34,41 @@ coldatHN=pd.read_csv(r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit
 """
 Preallocate dictionaries for each surround.
 """
-params=["csd","angshi","se"]#csd=center-surround difference, angshi= induced hue shift, se=standard error
+params=["angshi","se"]#csd=center-surround difference, angshi= induced hue shift, se=standard error
 dictTW=param_dict(np.linspace(0,315,8),params)
 dictSU=param_dict(np.linspace(0,315,8),params)
 dictMH=param_dict(np.linspace(0,315,8),params)
 dictLH=param_dict(np.linspace(0,315,8),params)
 dictHN=param_dict(np.linspace(0,315,8),params)
-dictTot=param_dict(np.linspace(0,315,8),params[1:3])#upper dictionaries are special subject values, dictTot is the mean of all 5 subjects.
+
+dictTot=param_dict(np.linspace(0,315,8),params)#upper dictionaries are special subject values, dictTot is the mean of all 5 subjects.
 
 """
 Transfer the data into dictionaries
 """
 for i in range(0,360,45):
-    for j in range(0,3):
-        dictTW[i][params[j]].update(coldatTW[j][int(17*i/45):int(17*i/45+17)])
-        dictSU[i][params[j]].update(coldatSU[j][int(17*i/45):int(17*i/45+17)])
-        dictMH[i][params[j]].update(coldatMH[j][int(17*i/45):int(17*i/45+17)])
-        dictLH[i][params[j]].update(coldatLH[j][int(17*i/45):int(17*i/45+17)])
-        dictHN[i][params[j]].update(coldatHN[j][int(17*i/45):int(17*i/45+17)])
+    for j in range(1,17):
+        dictTW[i]["angshi"].update({coldatTW[0][j]:coldatTW[1][j+i/45*17]})
+        dictTW[i]["se"].update({coldatTW[0][j]:coldatTW[2][j+i/45*17]})
+        dictSU[i]["angshi"].update({coldatSU[0][j]:coldatSU[1][j+i/45*17]})
+        dictSU[i]["se"].update({coldatSU[0][j]:coldatSU[2][j+i/45*17]})
+        dictMH[i]["angshi"].update({coldatMH[0][j]:coldatMH[1][j+i/45*17]})
+        dictMH[i]["se"].update({coldatMH[0][j]:coldatMH[2][j+i/45*17]})
+        dictLH[i]["angshi"].update({coldatLH[0][j]:coldatLH[1][j+i/45*17]})
+        dictLH[i]["se"].update({coldatLH[0][j]:coldatLH[2][j+i/45*17]})
+        dictHN[i]["angshi"].update({coldatHN[0][j]:coldatHN[1][j+i/45*17]})
+        dictHN[i]["se"].update({coldatHN[0][j]:coldatHN[2][j+i/45*17]})
+        
         
 """
 Get a mean value from all individuals for given surround and find the SE (mean of means/sqrt(number of means))
 """
 for i in range(0,360,45):#loop for each surround stimulus angle condition.
-    for k in range(1,17):#loop for each center hue angle measured in each surround.
-        a=[list(dictTW[i][params[1]].values())[k],list(dictSU[i][params[1]].values())[k],list(dictMH[i][params[1]].values())[k],\
-           list(dictLH[i][params[1]].values())[k],list(dictHN[i][params[1]].values())[k]]#list of each subject angshi values for the given surround
-        dictTot[i][params[1]].update({-180+22.5*k:np.mean(a)})#update the dictTot angshi value with average, where key is the corresponding csd value.
-        dictTot[i][params[2]].update({-180+22.5*k:st.sem(a)})##update the dictTot se value, where key is the corresponding csd value.
+    for k in range(0,16):#loop for each center hue angle measured in each surround.
+        a=[list(dictTW[i][params[0]].values())[k],list(dictSU[i][params[0]].values())[k],list(dictMH[i][params[0]].values())[k],\
+           list(dictLH[i][params[0]].values())[k],list(dictHN[i][params[0]].values())[k]]#list of each subject angshi values for the given surround
+        dictTot[i][params[0]].update({-157.5+22.5*k:np.mean(a)})#update the dictTot angshi value with average, where key is the corresponding csd value.
+        dictTot[i][params[1]].update({-157.5+22.5*k:st.sem(a)})##update the dictTot se value, where key is the corresponding csd value.
 
 #plt.plot(dictTot[45]["angshi"].keys(),dictTot[45]["angshi"].values(),color="black")
 plt.errorbar(dictTot[0]["angshi"].keys(),dictTot[0]["angshi"].values(),dictTot[0]["se"].values(),ecolor="red",color="black",capsize=3)#exemplary plot of the data.
@@ -87,7 +94,7 @@ for i in range(0,360,45):
     if i==315:
         print("all ok, ready to roll with cfi")
 
-def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",deco="ml"):
+def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",deco="ml",dicti=dictTot):
     """
     Data fit function:
         Checks the fit quality of the model with given parameters to the psychophysics data by using the given error estimation method.
@@ -111,6 +118,7 @@ def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",
         errType: string, optional. The method to be used for quantifying the fit quality. "rms"=Root mean square error, "mae"= mean absolute error, "cfi"= comparative fit index,
         "tli"= Tucker-Lewis index. For a detailed information about each of the model fit measurement: http://www.davidakenny.net/cm/fit.htm
         dec: string, optional. The decoder type to be used. The variable is "ml" (maximum likelihood) for standard, can also be "vecsum" (population vector).
+        dicti: dictionary, optional. The dictionary object which contains the data to be analyzed. The default is the average observer dictionary. 
         
         Note that the rms and mae values are given in terms of data standard error values. For example, rms=1 means the RMSEA between data and model is in average 1 standard error
         for each of the datapoint measured.
@@ -138,14 +146,14 @@ def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",
         else:
             pass
         if errType=="rms":#Root mean square error, quantified in standard error values.
-            sumval=np.sqrt((((np.array(dec.angShift)-np.array(list(dictTot[surrAvg[i]]["angshi"].values())))\
-                            /np.array(list(dictTot[surrAvg[i]]["se"].values())))**2).mean())#Formula: sqrt(mean(((model-data)/SE_data)^2))
+            sumval=np.sqrt((((np.array(dec.angShift)-np.array(list(dicti[surrAvg[i]]["angshi"].values())))\
+                            /np.array(list(dicti[surrAvg[i]]["se"].values())))**2).mean())#Formula: sqrt(mean(((model-data)/SE_data)^2))
             if sumval>fitThres:#stop if the fit is not good enough
                 print("Fit is not good enough for surround=%s, rs=%s"%(surrAvg[i],sumval))
                 break
         
         if errType=="mae":#mean absolute error, given in terms of standard error
-            sumval=(abs((np.array(dec.angShift)-np.array(list(dictTot[surrAvg[i]]["angshi"].values())))\
+            sumval=(abs((np.array(dec.angShift)-np.array(list(dicti[surrAvg[i]]["angshi"].values())))\
                             /np.array(list(dictTot[surrAvg[i]]["se"].values())))).mean()#Formula: mean(abs((model-data)/SE_data))
             if sumval>fitThres:#stop if the fit is not good enough
                     print("Fit is not good enough for surround=%s, rs=%s"%(surrAvg[i],sumval))
@@ -155,11 +163,11 @@ def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",
                           #but with same df as my model, here the choice of df is controversial!
                           #chi^2(model,data)=((model-data)/SE(data))^2, df=number of measurements-number of model params (6).
             #The nullmodel predicts always the average of the dataa value. This prediction can also be changed to no prediction of color tilt.
-            nulldist=sum(((np.array(list(dictTot[surrAvg[i]]["angshi"].values())).mean()-np.array(list(dictTot[surrAvg[i]]["angshi"].values())))\
-                            /np.array(list(dictTot[surrAvg[i]]["se"].values())))**2)-(len(np.array(list(dictTot[surrAvg[i]]["angshi"].values())))-6)
+            nulldist=sum(((np.array(list(dicti[surrAvg[i]]["angshi"].values())).mean()-np.array(list(dicti[surrAvg[i]]["angshi"].values())))\
+                            /np.array(list(dicti[surrAvg[i]]["se"].values())))**2)-(len(np.array(list(dicti[surrAvg[i]]["angshi"].values())))-6)
             #The model prediction of interest.
-            moddist=sum(((np.array(dec.angShift)-np.array(list(dictTot[surrAvg[i]]["angshi"].values())))\
-                            /np.array(list(dictTot[surrAvg[i]]["se"].values())))**2)-(len(np.array(list(dictTot[surrAvg[i]]["angshi"].values())))-6)
+            moddist=sum(((np.array(dec.angShift)-np.array(list(dicti[surrAvg[i]]["angshi"].values())))\
+                            /np.array(list(dicti[surrAvg[i]]["se"].values())))**2)-(len(np.array(list(dicti[surrAvg[i]]["angshi"].values())))-6)
             sumval=(nulldist-moddist)/nulldist#d value of the cfi.
             """
             If sumval is not between 0 and 1, set the lower limit as 0 and upper limit as 1.
@@ -174,11 +182,11 @@ def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",
         
         if errType=="tli":#Tucker Lewis index, similar to cfi, but now each chi^2 is divided to df instead of subtraction.
             #Nullmodel predicts again the data average, can be changed to prediction of no color tilt.
-            nullchi=sum(((np.array(list(dictTot[surrAvg[i]]["angshi"].values())).mean()-np.array(list(dictTot[surrAvg[i]]["angshi"].values())))\
-                            /np.array(list(dictTot[surrAvg[i]]["se"].values())))**2)/(len(np.array(list(dictTot[surrAvg[i]]["angshi"].values())))-6)
+            nullchi=sum(((np.array(list(dicti[surrAvg[i]]["angshi"].values())).mean()-np.array(list(dicti[surrAvg[i]]["angshi"].values())))\
+                            /np.array(list(dicti[surrAvg[i]]["se"].values())))**2)/(len(np.array(list(dicti[surrAvg[i]]["angshi"].values())))-6)
             #Prediction of the model of interest
-            modchi=sum(((np.array(dec.angShift)-np.array(list(dictTot[surrAvg[i]]["angshi"].values())))\
-                            /np.array(list(dictTot[surrAvg[i]]["se"].values())))**2)/(len(np.array(list(dictTot[surrAvg[i]]["angshi"].values())))-6)
+            modchi=sum(((np.array(dec.angShift)-np.array(list(dicti[surrAvg[i]]["angshi"].values())))\
+                            /np.array(list(dicti[surrAvg[i]]["se"].values())))**2)/(len(np.array(list(dicti[surrAvg[i]]["angshi"].values())))-6)
             sumval=(nullchi-modchi)/(nullchi-1)#d value
             if sumval<0:
                 sumval=0
@@ -196,7 +204,7 @@ def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",
         print("Next surround")
     return rs,decobjs
 
-def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",deco="ml"):
+def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",deco="ml",dicti="dictTot"):
     """Parameter scan function:
         This function uses the data_dist() function to scan through all parameter combinations given in the function. Warning: The scanning
         process takes long time, in some cases >30h. 
@@ -214,13 +222,15 @@ def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",de
         phInt: list. The non-uniformity phase values to be scanned.
         errType: string. Possible fit error measurements. To see the possible strings check data_dist().
         dec: string, optional. The decoder type to be used. The variable is "ml" (maximum likelihood) for standard, can also be "vecsum" (population vector).
-        
+        dicti: string, optional. The name of the dictionary object which contains the data to be analyzed. The default name is the average observer dictionary. 
+
         Returns
         -------
         decoders: list. The list of decoder objects which yield a good data fit. Maximum likelihood decoder is used.
         params: list. The list of dictionaries including parameters of the models giving good model fits.
     """
-    print("decoder=%s"%(deco))
+    print("decoder=%s for the dictionary %s"%(deco,dicti))
+    dicti=eval(dicti)
     kc=1#Kcent is arbitrary as the model is non-uniform!
     maxInh=1#these 2 parameters irrelevant, they dont do any job here!
     decoders=[]
@@ -243,7 +253,7 @@ def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",de
                             if depb>=depu:#To ensure the lower limit does not exceed the upper limit
                                 break
                             print("moddepbel=%s,moddepup=%s,kbel=%s,kup=%s,ksur=%s,phase=%s"%(depb,depu,kb,ku,ksi[i],phase))#The model parameters
-                            dif,dec=data_dist(kc,ksi[i],maxInh,stdInt=[ku,kb],depInt=[depb,depu],fitThres=fit,errType=errType,phase=phase,deco=deco)#fit value and decoder list
+                            dif,dec=data_dist(kc,ksi[i],maxInh,stdInt=[ku,kb],depInt=[depb,depu],fitThres=fit,errType=errType,phase=phase,deco=deco,dicti=dicti)#fit value and decoder list
                             if len(dec)==8:
                                 print("fit params work for each of the surround for given rms threshold")
                                 decoders.append(dec)#only when the model gives a good fit for all of the surround, outputs of the data_dist are appended.
@@ -299,6 +309,24 @@ Find the maximum and minimum values of the variables for the next and better sca
 This function is not used as the first scan yielded very similar model fits for the best 10 models, a further scan with smaller increments
 was unnecessary.
 """
+
+"""
+Scan for each individual now instead of the average observer
+"""
+dicts=["dictHN","dictLH","dictMH","dictSU","dictTW"]
+fit=10;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
+for i in dicts:#change to dicts if you wanna redo the 1st scan
+    decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,dicti=i)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+    f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,i), 'wb')
+    pickle.dump(paraml, f)
+
+decod="vecsum"
+for i in dicts:#change to dicts if you wanna redo the 1st scan
+    decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,dicti=i)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+    f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,i), 'wb')
+    pickle.dump(paraml, f)
+
+
 def auto_scan(thr,ksistep,kstep,depstep,param):
     """Parameter scanner for the next iteration:
         This function takes the values of the previous parameter scan and uses them for the next scan as lower-upper limits, respectively.
@@ -350,6 +378,7 @@ def auto_scan(thr,ksistep,kstep,depstep,param):
     """
     decl2,paraml2=scan_params(thr,np.linspace(ksib,ksiu,ksistep),kbt,kut,depbt,deput,kstep,depstep)
     return decl2,paraml2
+
 
 """
 *Development notes

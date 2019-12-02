@@ -27,8 +27,7 @@ path=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\thesis_figures"
 decoder labels/colors, this labeling is used for all figures for consistency.
 """
 labs=["population vector","von Mises fit","maximum likelihood","maximum fire rate"]
-colors=["red","blue","black","green"]
-
+colors=["green","teal","magenta","brown"]
 """
 figure supplement 2
 Uniform model surround modulation and tuning curves before and after surround supression
@@ -227,14 +226,13 @@ except NameError:
     col1=col.colmod(1.5,1,0.5,[1,10],bwType="regular")
     dec1v=col.decoder.vecsum(col1.x,col1.resulty,col1.unitTracker)
     dec1vm=col.decoder.vmfit(col1.x,col1.resulty,col1.unitTracker)
-    dec1m=col.decoder.ml(col1.x,col1.centery,col1.resulty,col1.unitTracker)
+    dec1m=col.decoder.ml(col1.x,col1.centery,col1.resulty,col1.unitTracker,tabStep=1)
     dec1mf=col.decoder.maxfr(col1.x,col1.resulty,col1.unitTracker)
 
 plt.figure()
-plt.title("Color tilt predictions of decoders",fontsize=20)
-plt.ylabel("Induced hue shift [°]",fontsize=15)
-plt.xlabel("Hue difference between center and surround [°]",fontsize=15)
-plt.tick_params(axis='both', which='major', labelsize=15)
+plt.ylabel("Induced hue shift [°]",fontsize=30)
+plt.xlabel("Hue difference between center and surround [°]",fontsize=30)
+plt.tick_params(axis='both', which='major', labelsize=20)
 plt.xticks(np.linspace(-180,180,9))
 
 
@@ -242,8 +240,10 @@ plt.plot(dec1v.centSurDif,dec1v.angShift,label=labs[0],color=colors[0])
 plt.plot(dec1vm.centSurDif,dec1vm.angShift,label=labs[1],color=colors[1])
 plt.plot(dec1m.centSurDif,dec1m.angShift,label=labs[2],color=colors[2])
 plt.plot(dec1mf.centSurDif,dec1mf.angShift,label=labs[3],color=colors[3])
-plt.legend(loc="best", bbox_to_anchor=(1,1),fontsize=15)
-plt.subplots_adjust(left=0.06, bottom=0.09, right=0.99, top=0.94, wspace=0.2, hspace=0.2)
+plt.legend(loc="lower right",fontsize=25)
+plt.subplots_adjust(left=0.08, bottom=0.12, right=0.99, top=0.99, wspace=0.2, hspace=0.2)
+plt.savefig(path+"\\all_decoders_together.pdf")
+
 """
 
 """
@@ -270,17 +270,16 @@ TO DO: Add in the middle of S4 the pop act. without surround for comparison. DON
 """
 """
 fig=plotter.plot_template(auto=True)
-fig.text(0.379,0.34,"225",size=15)
-fig.text(0.528,0.34,"270",size=15)
-fig.text(0.683,0.34,"315",size=15)
-fig.text(0.683,0.48,"0",size=15)
-fig.text(0.379,0.48,"180",size=15)
-fig.text(0.683,0.61,"45",size=15)
-fig.text(0.528,0.61,"90",size=15)
-fig.text(0.379,0.61,"135",size=15)
-plt.title("Tuning curves of the best model",y=1.08,fontsize=20)#1st plot is the color tilt curve, subplots with different surrounds
-plt.xlabel("Center stimulus hue angle [°]",fontsize=15)
-plt.ylabel("Unit activity [a.u.]",fontsize=15,x=-0.07)
+fig.text(0.355,0.39,"225",size=20)
+fig.text(0.504,0.39,"270",size=20)
+fig.text(0.675,0.39,"315",size=20)
+fig.text(0.675,0.53,"0",size=20)
+fig.text(0.355,0.53,"180",size=20)
+fig.text(0.675,0.7,"45",size=20)
+fig.text(0.504,0.7,"90",size=20)
+fig.text(0.355,0.7,"135",size=20)
+plt.xlabel("Center stimulus hue angle [°]",fontsize=30)
+plt.ylabel("Unit activity [a.u.]",fontsize=30)
 surr=[135,90,45,180,0,225,270,315]
 for i in range(0,len(surr)):
     a=col.colmod(1,2.3,0.5,[1.2,0.9],bwType="gradient/sum",phase=22.5,avgSur=surr[i],depInt=[0.2,0.4],depmod=True,stdtransform=False)
@@ -306,12 +305,13 @@ for i in range(0,len(surr)):
             ax2.set_xlim([0,360])
 
     ax.set_xticks(np.linspace(0,360,9))
-    ax.tick_params(axis='both', which='major', labelsize=15)
+    ax.tick_params(axis='both', which='major', labelsize=20)
+    ax.set_yticks([])
     ax.xaxis.set_major_locator(MultipleLocator(90))
     ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
     ax.xaxis.set_minor_locator(MultipleLocator(45))
     ax.set_xlim([0,360])
-plt.subplots_adjust(left=0.105, bottom=0.09, right=0.98, top=0.88, wspace=0.12, hspace=0.20)
+plt.subplots_adjust(left=0.08, bottom=0.12, right=0.98, top=1, wspace=0.16, hspace=0.20)
 mng = plt.get_current_fig_manager()
 mng.window.state("zoomed")
 plt.savefig(path+"\\tuning_curves_best_model.pdf")
@@ -365,35 +365,42 @@ plt.savefig(path+"\\tuning_curves_unimod.pdf")
 """
 Manuscript figure 2:  Population activity thingy (results first figure)
 stimang=180
-tabStep=5
+tabStep=10
 col1=col.colmod(1.5,1,0.5,[1,10],bwType="regular",avgSur=135)
 dec1m=col.decoder.ml(col1.x,col1.centery,col1.resulty,col1.unitTracker,avgSur=135,tabStep=tabStep)#!TABSTEP here 0.5, so indexes are to be doubled
 popNS=col.decoder.nosurround(stimang,col1.x,col1.centery)#Population activity without surround
 popS=col.decoder.nosurround(stimang,col1.x,col1.resulty)#Population activity without surround
 fig=plt.figure()
-plt.ylabel("Activation [a.u.]",fontsize=20)
-plt.xlabel("Hue angle [°]",fontsize=20)
-plt.tick_params(axis='both', which='major', labelsize=20)
+plt.ylabel("Activation [a.u.]",fontsize=30)
+plt.xlabel("Hue angle [°]",fontsize=30)
+plt.tick_params(axis='both', which='major', labelsize=30)
 ax1=plt.gca()
 ax1.xaxis.set_major_locator(MultipleLocator(45))
 ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
 ax1.xaxis.set_minor_locator(MultipleLocator(22.5))
 surmod=(1-col1.surroundy[np.where(col1.x==1)[0][0]:np.where(col1.x==361)[0][0]:10])*max(popNS.noSur)
-plt.plot(col1.unitTracker,popNS.noSur,color="green",label="Population response")
+plt.plot(col1.unitTracker,popNS.noSur,color="purple",label="Population response")
 plt.plot(col1.unitTracker,popS.noSur,color="red",label="Modulated response")
 plt.plot(col1.unitTracker,surmod,color="blue",label="Surround modulation")
 plt.plot(col1.unitTracker,dec1m.surDecoder[int(list(col1.unitTracker).index(stimang)/(tabStep/10))],color="black",linestyle="dashed",label="Decoder's best fit")
+plt.yticks([])
 plt.legend(prop={'size':20})
 
-plt.gca().set(frame_on=True)
+plt.gca().set(frame_on=True)#puts the frame of the plot if True, removes if False.
 mng = plt.get_current_fig_manager()
 mng.window.state("zoomed")
 plt.pause(0.1)
-plt.subplots_adjust(left=0.1, bottom=0.1, right=0.99, top=1, wspace=0, hspace=0.02)
-fig.text(0.53,0.965,"180°",size=20,color="green")
-fig.text(0.12,0.89,"135°",size=20,color="blue")
+plt.subplots_adjust(left=0.04, bottom=0.13, right=0.99, top=1, wspace=0, hspace=0.02)
+fig.text(0.49,0.965,"180°",size=20,color="purple")
+fig.text(0.08,0.89,"135°",size=20,color="blue")
 plt.savefig(path+"\\popact_fig.pdf")
 """
+
+"""
+Barplot figure for best model RMS, done in data_params.py
+(after loading the json file)
+"""
+
 """
 FIGURES TO PUT:
 Parameter distribution DONE BUT MANUAL
