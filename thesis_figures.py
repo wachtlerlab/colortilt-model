@@ -402,10 +402,187 @@ Barplot figure for best model RMS, done in data_params.py
 """
 
 """
+Kappa and depmod distribution for different surround conditions.
+Done in data_params.py both linear and polar versions
+"""
+
+
+"""
+Tuning curves of the best model as a function of surround (same as manuscript tuning curves of the best fitting model which is for ml,
+but this one is for popvec)
+Do this for uniform & center-only uniform ml and popvec plots. 
+"""
+"""
+def tuning_curve_plotter(*args,**kwargs):
+    fig=plotter.plot_template(auto=True)
+    fig.text(0.355,0.39,"225",size=20)
+    fig.text(0.504,0.39,"270",size=20)
+    fig.text(0.675,0.39,"315",size=20)
+    fig.text(0.675,0.53,"0",size=20)
+    fig.text(0.355,0.53,"180",size=20)
+    fig.text(0.675,0.7,"45",size=20)
+    fig.text(0.504,0.7,"90",size=20)
+    fig.text(0.355,0.7,"135",size=20)
+    plt.xlabel("Center stimulus hue angle [°]",fontsize=30)
+    plt.ylabel("Unit activity [a.u.]",fontsize=30)
+    surr=[135,90,45,180,0,225,270,315]
+    for i in range(0,len(surr)):
+        a=col.colmod(*args,**kwargs,avgSur=surr[i])
+        if i==4:
+            ax=fig.add_subplot(3,3,i+2)
+            ax.axes.get_yaxis().set_visible(False)
+            ax.axes.get_xaxis().set_visible(False)
+            ax2=fig.add_subplot(3,3,i+1)
+            
+            ax2.axes.get_yaxis().set_visible(False)
+            ax2.axes.get_xaxis().set_visible(False)
+        else:
+            ax=plotter.subplotter(fig,i)
+        for j in (1,22,45,67,90,112,135,157,180,202,225,247,270,292,315,337):
+            ax.plot(a.x[np.where(a.x==0)[0][0]:np.where(a.x==360)[0][0]],a.resulty[j-1][np.where(a.x==0)[0][0]:np.where(a.x==360)[0][0]],color="black",linewidth=1)
+            if i==4:
+                ax2.plot(a.x[np.where(a.x==0)[0][0]:np.where(a.x==360)[0][0]],a.centery[j-1][np.where(a.x==0)[0][0]:np.where(a.x==360)[0][0]],color="black",linewidth=1)
+                ax2.set_xticks(np.linspace(0,360,9))
+                ax2.tick_params(axis='both', which='major', labelsize=15)
+                ax2.xaxis.set_major_locator(MultipleLocator(90))
+                ax2.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+                ax2.xaxis.set_minor_locator(MultipleLocator(45))
+                ax2.set_xlim([0,360])
+    
+        ax.set_xticks(np.linspace(0,360,9))
+        ax.tick_params(axis='both', which='major', labelsize=20)
+        ax.set_yticks([])
+        ax.xaxis.set_major_locator(MultipleLocator(90))
+        ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+        ax.xaxis.set_minor_locator(MultipleLocator(45))
+        ax.set_xlim([0,360])
+    plt.subplots_adjust(left=0.08, bottom=0.12, right=0.98, top=1, wspace=0.16, hspace=0.20)
+    mng = plt.get_current_fig_manager()
+    mng.window.state("zoomed")
+    return
+def saver():
+    q1=input("Wanna save?\n")
+    while q1=="yes":
+        q2=input("Please type the figure name.\n")
+        plt.savefig(path+"\\"+q2+".pdf")
+        print("saved.")
+        q1="no"
+    return
+#mluni
+tuning_curve_plotter(1.5,1.7,0.4)
+#run one by one 
+saver()
+#mlcuni
+tuning_curve_plotter(1,1.322,1,stdInt=[2,2],bwType="gradient/sum",phase=22.5,depInt=[0.4,0.6],depmod=True,stdtransform=False)
+saver()
+#pvuni
+tuning_curve_plotter(2.3,2.0999999999999996,0.6000000000000001)
+saver()
+#pvcuni
+tuning_curve_plotter(1,2.3,1,stdInt=[1.8,1.8],bwType="gradient/sum",phase=22.5,depInt=[0.4,0.6],depmod=True,stdtransform=False)
+saver()
+#mlbestmod
+tuning_curve_plotter(1,2.3,1,stdInt=[1.2,0.9],bwType="gradient/sum",phase=22.5,depInt=[0.2,0.3999999999999999],depmod=True,stdtransform=False)
+saver()
+#pvbestmod
+tuning_curve_plotter(1,2.3,1,stdInt=[2,1.9],bwType="gradient/sum",phase=22.5,depInt=[0.4,0.6],depmod=True,stdtransform=False)
+saver()
+"""
+
+
+"""
+Manuscript figure for decoding errors, do as 2x2 subplot where left is sum normalized, right is maxfr normalized with decoder bias 
+above and tuning curves below
+
+modsum=col.colmod(1,1,1,stdInt=[2,1],bwType="gradient/sum",depInt=[0.2,0.8],depmod=True,stdtransform=False)
+
+mlsum=col.decoder.ml(modsum.x,modsum.centery,modsum.centery,modsum.unitTracker)
+vssum=col.decoder.vecsum(modsum.x,modsum.centery,modsum.unitTracker)
+#mfrsum=col.decoder.maxfr(modsum.x,modsum.centery,modsum.unitTracker)
+vmsum=col.decoder.vmfit(modsum.x,modsum.centery,modsum.unitTracker)
+
+modfr=col.colmod(1,1,1,stdInt=[2,1],bwType="gradient/max",depInt=[0.2,0.8],depmod=True,stdtransform=False)
+
+mlfr=col.decoder.ml(modfr.x,modfr.centery,modfr.centery,modfr.unitTracker)
+vsfr=col.decoder.vecsum(modfr.x,modfr.centery,modfr.unitTracker)
+#mfrfr=col.decoder.maxfr(modfr.x,modfr.centery,modfr.unitTracker)
+vmfr=col.decoder.vmfit(modfr.x,modfr.centery,modfr.unitTracker)
+
+fig=plt.figure()
+
+ax1=fig.add_subplot(2,2,1)
+ax1.set_title("Total area normalized",fontsize=25)
+ax1.set_ylabel("Decoding Error [°]",fontsize=20)
+ax1.set_xlabel("Center stiumulus hue angle [°]",fontsize=20)
+ax1.set_xticks(np.linspace(0,360,9))
+ax1.tick_params(axis='both', which='major', labelsize=20)
+ax1.xaxis.set_major_locator(MultipleLocator(90))
+ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+ax1.xaxis.set_minor_locator(MultipleLocator(45))
+ax1.set_ylim([-6,6])
+
+ax2=fig.add_subplot(2,2,2)
+ax2.set_title("Maximum fire rate normalized",fontsize=25)
+ax2.set_xticks(np.linspace(0,360,9))
+ax2.set_yticks([])
+ax2.tick_params(axis='both', which='major', labelsize=20)
+ax2.xaxis.set_major_locator(MultipleLocator(90))
+ax2.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+ax2.xaxis.set_minor_locator(MultipleLocator(45))
+ax2.set_ylim([-6,6])
+
+
+labs=["population vector","von Mises fit","maximum likelihood"]
+colors=["green","teal","magenta"]
+sumdecs=["vssum","vmsum","mlsum"]
+frdecs=["vsfr","vmfr","mlfr"]
+for i in range(0,3):
+    ax1.plot(np.array(eval(sumdecs[i]).centSurDif)+180,eval(sumdecs[i]).angShift,label=labs[i],color=colors[i])
+    ax2.plot(np.array(eval(frdecs[i]).centSurDif)+180,eval(frdecs[i]).angShift,label=labs[i],color=colors[i])
+ax2.legend(loc="best",prop={'size':20},bbox_to_anchor=(1,1))
+
+ax3=fig.add_subplot(2,2,3)
+ax3.set_ylabel("Unit activity [a.u.]",fontsize=20)
+ax3.set_xlabel("Center stiumulus hue angle [°]",fontsize=20)
+ax3.set_xticks(np.linspace(0,360,9))
+ax3.xaxis.set_major_locator(MultipleLocator(90))
+ax3.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+ax3.xaxis.set_minor_locator(MultipleLocator(45))
+ax3.tick_params(axis='both', which='major', labelsize=20)
+ax3.set_yticks([])
+ax3.set_xlim([0,360])
+
+ax4=fig.add_subplot(2,2,4)
+ax4.set_xticks(np.linspace(0,360,9))
+ax4.set_yticks([])
+ax4.tick_params(axis='both', which='major', labelsize=20)
+ax4.xaxis.set_major_locator(MultipleLocator(90))
+ax4.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+ax4.xaxis.set_minor_locator(MultipleLocator(45))
+ax4.set_xlim([0,360])
+
+for j in range(23,len(modsum.centery)+1,23):
+    ax3.plot(modsum.x[np.where(modsum.x==0)[0][0]:np.where(modsum.x==360)[0][0]],modsum.centery[j-1][np.where(modsum.x==0)[0][0]:np.where(modsum.x==360)[0][0]],color="black",linewidth=1)
+    ax4.plot(modfr.x[np.where(modfr.x==0)[0][0]:np.where(modfr.x==360)[0][0]],modfr.centery[j-1][np.where(modfr.x==0)[0][0]:np.where(modfr.x==360)[0][0]],color="black",linewidth=1)
+
+mng = plt.get_current_fig_manager()
+mng.window.state("zoomed")
+plt.pause(0.1)
+plt.subplots_adjust(left=0.07, bottom=0.1, right=0.74, top=0.95, wspace=0.1, hspace=0.28)
+
+plt.savefig(path+"\\decoding_error_different_models.pdf")
+"""
+
+"""
+Phase effect of center and surround Kappa
+in colclass incorporated as the functions centphase and surphase
+"""
+
+"""
 FIGURES TO PUT:
 Parameter distribution DONE BUT MANUAL
 Best fit of both models in same plot without data DONE BUT MANUAL
 Non-uniform tuning curves best fit ML DONE
-Parameter scan beschreiben (methods oder first sentence of the results scan subset.)
+Parameter scan description (methods oder first sentence of the results scan subset.)
 Skype Freitag 14.00 (skype thomas.wachtler)
 """

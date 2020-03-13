@@ -77,6 +77,31 @@ def std2kappa(std,Kbel,Kup):
         raise Exception("WARNING! The estimated Kappa is not in given interval. Interval=[%s,%s], estimated Kappa=%s"%(Kbel,Kup,model.intercept_+std*model.coef_))
     return model.intercept_+std*model.coef_  #this function is useful to estimate the Kcent in colmod (colclass.py)!
 
+
+def kappa2std(kappa):
+    """The kappa transformer:
+        This function transforms a given Kappa value to the standard deviation value.
+        Idea is create a von Mises distribution and calculate its standart deviation in the single cycle interval
+        
+        Parameters
+        ----------
+        kappa: float. The Kappa value which is wished to be transformed to the Kappa value.
+        
+        Returns
+        -------
+        std: float. The desired std value of the given Kappa.
+    """
+    x=np.linspace(-np.pi,np.pi,num=100*2*np.pi+1)#Create an array spanning from -pi to +pi with a length of 101 (0 in the middle,
+                                                 #50 values negative, 50 values positive) 
+    vmdist=1/(2*np.pi)*np.e**(kappa*np.cos(x-0))
+    vmdist=vmdist/sum(vmdist)
+    stdCom=np.rad2deg(np.sqrt(sum(x**2*vmdist)))
+    
+    return stdCom  #this function is useful to estimate the Kcent in colmod (colclass.py)!
+
+
+
+
 def depth_modulator(depInt,avgSur,phase=0):
     """
     Surround modulation depth specifier:

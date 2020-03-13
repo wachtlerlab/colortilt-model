@@ -18,13 +18,14 @@ import colclass as col
 from supplementary_functions import std2kappa, depth_modulator, plotter, param_dict, circler
 import cmath as c
 from scipy import optimize as op
+
 path=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\thesis_figures"
 
 """
 Take the best fit color model to start with
 """
-colmod=col.colmod(1,2.3,0.5,stdInt=[1.2,0.9],bwType="gradient/sum",phase=22.5,depInt=[0.2,0.4],depmod=True,stdtransform=False)
-
+colmod=col.colmod(1,2.3,0.5,stdInt=[1.3,1.2],bwType="gradient/sum",phase=22.5,avgSur=0,depInt=[0.4,0.6],depmod=True,stdtransform=False)
+#!!!For this model the correction is WORSE THAN the non corrected.
 """
 Check the model without surround
 """
@@ -282,6 +283,49 @@ plt.legend(["y radius","x radius","cirle fit"])
 plt.yticks([])
 
 
+"""
+The circle error correction does not work for all given kappa intervals, when e.g Kappa interval is small or the kappa values are high,
+then the error correction leads to even stronger bias.
+Try the fit with sinus on the population activity without surround (to fit are phase and y offset as well as amplitude.)
+Worst case use the bias values directly to correct the unit tuning activities.
+These further modulations of the model to get rid of bias can lead to different model behaviors compared to ml-decoder.
+"""
+colmod=col.colmod(1,2.3,0.5,stdInt=[1.5,1],bwType="gradient/sum",phase=22.5,avgSur=0,depInt=[0.4,0.6],depmod=True,stdtransform=False)
+pvd=col.decoder.vecsum(colmod.x,colmod.centery,colmod.unitTracker)
+
+nosurpop=[]
+for i in range(0,len(colmod.unitTracker)):
+    nosurpop.append(col.decoder.nosurround(colmod.unitTracker[i],colmod.x,colmod.centery).noSur[i])
+def fit_func(ang,amp,poff,aoff,freq):#fit a sinus curve to population max activity without surround
+    return amp*np.sin(freq*(np.deg2rad(ang)-np.deg2rad(poff)))+aoff
+
+popt,pcov=op.curve_fit(fit_func,colmod.unitTracker,nosurpop,method='lm',maxfev=10000)
+q=fit_func(colmod.unitTracker,*popt)
+
+pvdnosur=[]
+for i in range(0,len(colmod.unitTracker)):
+    pvdnosur.append(pvd.surDecoder[i][i])#pvdnosur same as nosurpop    
+
+plt.figure()
+plt.plot(colmod.unitTracker,nosurpop,".",markersize=1)
+plt.plot(colmod.unitTracker,pvdnosur,".",markersize=1)
+plt.plot(colmod.unitTracker,q,".",markersize=1)
+
+popSurVec=[]
+decodedAng=[]
+for i in range(0,len(pvd.popSurVec)):
+    popSurVec.append(np.array(pvd.popSurVec[i])/nosurpop)
+    decodedAng.append(np.rad2deg(c.phase(np.sum(popSurVec[i]))))
+decodedAng1=decodedAng-np.linspace(1,360,360)
+for i in range(0,len(decodedAng1)):
+    if decodedAng1[i]<-180:
+        decodedAng[i]=decodedAng[i]+360
+    elif decodedAng1[i]>180:
+        decodedAng[i]=decodedAng[i]-360
+plt.figure()
+plt.plot(pvd.centSurDif,decodedAng-np.linspace(1,360,360))
+plt.plot(pvd.centSurDif,pvd.angShift)
+#!THIS ERROR CORRECTION ACTUALLY CORRESPONDS TO MAXFR NORMALIZED NON UNIFORM POPULATION
 """
 Alternative idea:
 Try to find the portion of vectors to be added around the center hue to get the decoding bias of 0 for the cases of non-symmetric 

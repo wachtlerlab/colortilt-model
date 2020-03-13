@@ -21,6 +21,11 @@ import pickle
 from datetime import date
 
 """
+Scan where kapa surround and suppression strength phases are same but center kappa phase differs.
+sur phase 22.5 cent phase orthogonal and other way around
+"""
+
+"""
 Import the data
 !These directories should be changed accordingly to the directory where data csv file is. 
 """
@@ -73,6 +78,7 @@ for i in range(0,360,45):#loop for each surround stimulus angle condition.
 #plt.plot(dictTot[45]["angshi"].keys(),dictTot[45]["angshi"].values(),color="black")
 plt.errorbar(dictTot[0]["angshi"].keys(),dictTot[0]["angshi"].values(),dictTot[0]["se"].values(),ecolor="red",color="black",capsize=3)#exemplary plot of the data.
 
+
 """
 Now data fit analysis, ml decoder is optimized to return only the angle values evident in data.
 model type: ml gs depmod
@@ -94,7 +100,7 @@ for i in range(0,360,45):
     if i==315:
         print("all ok, ready to roll with cfi")
 
-def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",deco="ml",dicti=dictTot):
+def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",deco="ml",dicti=dictTot,se=True,errN=False,bwType="gradient/sum",KsurInt=None,ksurphase=0):
     """
     Data fit function:
         Checks the fit quality of the model with given parameters to the psychophysics data by using the given error estimation method.
@@ -119,7 +125,11 @@ def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",
         "tli"= Tucker-Lewis index. For a detailed information about each of the model fit measurement: http://www.davidakenny.net/cm/fit.htm
         dec: string, optional. The decoder type to be used. The variable is "ml" (maximum likelihood) for standard, can also be "vecsum" (population vector).
         dicti: dictionary, optional. The dictionary object which contains the data to be analyzed. The default is the average observer dictionary. 
-        
+        se: boolean, optional. If false, then the scan is done without se normalization and RMS is based on absolute angular values.
+        errN: boolean, optional. Only useful vor population vector decoder. If true, the decoder is error corrected (for details see colclass.)
+        KsurInt: list, optional. If a list value is given, then surround kappa is also phase modulated. Default is None. Give as [ku,kb]
+        ksurphase: integer, optional. Default is 0. If a number is specified, the phase of kappa surround is shifted by the given value in degrees.
+
         Note that the rms and mae values are given in terms of data standard error values. For example, rms=1 means the RMSEA between data and model is in average 1 standard error
         for each of the datapoint measured.
         
@@ -136,22 +146,40 @@ def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",
     Create the model and decoder objects for each surround condition, check if the fit is good enough in each surround step and stop if not
     """
     for i in range(0,len(surrAvg)):
-        colMod=col.colmod(Kcent,Ksur,maxInh,stdInt,bwType="gradient/sum",phase=phase,avgSur=surrAvg[i],depInt=depInt,depmod=True,stdtransform=False)#see colclass.py for details.
+        print("unit activity normalization %s" %(bwType))
+        if bwType=="regular":
+            print("uniform")
+            colMod=col.colmod(Kcent,Ksur,maxInh,avgSur=surrAvg[i],bwType=bwType)
+        elif bwType!="regular":
+            print("non-uniform")
+            colMod=col.colmod(Kcent,Ksur,maxInh,stdInt,bwType=bwType,phase=phase,avgSur=surrAvg[i],depInt=depInt,depmod=True,stdtransform=False,KsurInt=KsurInt,ksurphase=ksurphase)#see colclass.py for details.
+
         if deco=="vecsum":
             print("vecsum decoder")
-            dec=col.decoder.vecsum(colMod.x,colMod.resulty,colMod.unitTracker,avgSur=surrAvg[i],errNorm=True,centery=colMod.centery,dataFit=True)    
+            dec=col.decoder.vecsum(colMod.x,colMod.resulty,colMod.unitTracker,avgSur=surrAvg[i],errNorm=errN,centery=colMod.centery,dataFit=True)
+            if errN==False:
+                print("Warning, the population vector decoder has no error correction.")
+            else:
+                print("Popvec decoder with error correction.")
         elif deco=="ml":
             print("ml decoder")
             dec=col.decoder.ml(colMod.x,colMod.centery,colMod.resulty,colMod.unitTracker,avgSur=surrAvg[i],dataFit=True)#maximum likelihood decoder, see colclass.py for details.
         else:
-            pass
+            raise Exception("Wrong decoder name given, please look at documentation")
         if errType=="rms":#Root mean square error, quantified in standard error values.
-            sumval=np.sqrt((((np.array(dec.angShift)-np.array(list(dicti[surrAvg[i]]["angshi"].values())))\
-                            /np.array(list(dicti[surrAvg[i]]["se"].values())))**2).mean())#Formula: sqrt(mean(((model-data)/SE_data)^2))
-            if sumval>fitThres:#stop if the fit is not good enough
-                print("Fit is not good enough for surround=%s, rs=%s"%(surrAvg[i],sumval))
-                break
-        
+            if se==True:
+                sumval=np.sqrt((((np.array(dec.angShift)-np.array(list(dicti[surrAvg[i]]["angshi"].values())))\
+                                /np.array(list(dicti[surrAvg[i]]["se"].values())))**2).mean())#Formula: sqrt(mean(((model-data)/SE_data)^2))
+                if sumval>fitThres:#stop if the fit is not good enough
+                    print("Fit is not good enough for surround=%s, rs=%s"%(surrAvg[i],sumval))
+                    break
+            else:
+                print("no standart error normalization")
+                sumval=np.sqrt(((np.array(dec.angShift)-np.array(list(dicti[surrAvg[i]]["angshi"].values())))**2).mean())#Formula: sqrt(mean(((model-data)/SE_data)^2))
+                if sumval>fitThres:#stop if the fit is not good enough
+                    print("Fit is not good enough for surround=%s, rs=%s"%(surrAvg[i],sumval))
+                    break
+            
         if errType=="mae":#mean absolute error, given in terms of standard error
             sumval=(abs((np.array(dec.angShift)-np.array(list(dicti[surrAvg[i]]["angshi"].values())))\
                             /np.array(list(dictTot[surrAvg[i]]["se"].values())))).mean()#Formula: mean(abs((model-data)/SE_data))
@@ -204,10 +232,10 @@ def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",
         print("Next surround")
     return rs,decobjs
 
-def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",deco="ml",dicti="dictTot"):
+def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",deco="ml",dicti="dictTot",se=True,errN=False,bwType="gradient/sum",kci=None,depval=None,ckapun=False,KsurInt=None,KsurStep=None,ksurphase=0):
     """Parameter scan function:
         This function uses the data_dist() function to scan through all parameter combinations given in the function. Warning: The scanning
-        process takes long time, in some cases >30h. 
+        process takes long time, in some cases even days. 
         
         Parameters
         -----------
@@ -217,13 +245,27 @@ def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",de
         kus: float. Upper limit of the center tuning curve Kappa.
         depbs: float. Lower limit of the maximum surround suppression.
         depus. float. Upper limit of the maximum surround suppression.
-        kstep: Increments to increase kbs or decrease kus.
+        kstep: float. Increments to increase kbs or decrease kus.
         depstep: Increments to increase depbs or decrease depus.
         phInt: list. The non-uniformity phase values to be scanned.
         errType: string. Possible fit error measurements. To see the possible strings check data_dist().
         dec: string, optional. The decoder type to be used. The variable is "ml" (maximum likelihood) for standard, can also be "vecsum" (population vector).
         dicti: string, optional. The name of the dictionary object which contains the data to be analyzed. The default name is the average observer dictionary. 
+        se: boolean, optional. If false, then the scan is done without se normalization and RMS is based on absolute angular values.
+        errN: boolean, optional. Only useful vor population vector decoder. If true, the decoder is error corrected (for details see colclass.)
+        bwType: string, optional. Denotes the model type (see also colclass). Uniform if "regular", non-uniform for other possibilities
+        kci: list, optional. The uniform scan center kappa value interval to be scanned
+        depval: list, optional. The uniform scan modulation depth value interval to be scanned
+        ckapun: boolean, optional. The uniformity of the center unit tuning curves in the case of non-uniform model.
+        KsurInt: list, optional. If a list value is given, then surround kappa is also phase modulated. Default is None. Give as [ku,kb]
+        KsurStep: float. The binning of KsurInt during scan.
+        ksurphase: integer, optional. Default is 0. If a number is specified, the phase of kappa surround is shifted by the given value in degrees.
 
+        
+        For the uniform analysis, following three parameters are necessary: center kappa, surround kappa, modulation strength, 3 free parameters as 
+        opposed to non-uniform case (which has additional to surround kappa the center kapa max/min values and surround suppression max/min values as a function 
+        of surround hue as well as modulation phase)
+        
         Returns
         -------
         decoders: list. The list of decoder objects which yield a good data fit. Maximum likelihood decoder is used.
@@ -231,35 +273,87 @@ def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",de
     """
     print("decoder=%s for the dictionary %s"%(deco,dicti))
     dicti=eval(dicti)
-    kc=1#Kcent is arbitrary as the model is non-uniform!
-    maxInh=1#these 2 parameters irrelevant, they dont do any job here!
-    decoders=[]
-    params=[]
-    for i in range(0,len(ksi)):#From here on, each parameter is scanned as a nested loop, so each parameter combination can be considered
-        for m in range(0,len(phInt)):
-            phase=phInt[m]
-            for j in range(0,100):
-                ku=-kstep*j+kus
-                #print("upper kappa=%s"%(ku))
-                for k in range(0,100):
-                    kb=kstep*k+kbs
-                    if kb>=ku:#To ensure the lower limit does not exceed the upper limit
-                        break
-                    #print("below kappa=%s"%(kb))
-                    for l in range(0,100):
-                        depu=-depstep*l+depus
-                        for n in range(0,100):
-                            depb=depstep*n+depbs
-                            if depb>=depu:#To ensure the lower limit does not exceed the upper limit
-                                break
-                            print("moddepbel=%s,moddepup=%s,kbel=%s,kup=%s,ksur=%s,phase=%s"%(depb,depu,kb,ku,ksi[i],phase))#The model parameters
-                            dif,dec=data_dist(kc,ksi[i],maxInh,stdInt=[ku,kb],depInt=[depb,depu],fitThres=fit,errType=errType,phase=phase,deco=deco,dicti=dicti)#fit value and decoder list
-                            if len(dec)==8:
-                                print("fit params work for each of the surround for given rms threshold")
-                                decoders.append(dec)#only when the model gives a good fit for all of the surround, outputs of the data_dist are appended.
-                                params.append({"depb":depb,"depu":depu,"kb":kb,"ku":ku,"ksi":ksi[i],"phase":phase,"dif":dif})
-    return decoders,params
- 
+    if bwType!="regular":
+        kc=1#Kcent is arbitrary as the model is non-uniform!
+        maxInh=1#these 2 parameters irrelevant, they dont do any job here!
+        decoders=[]
+        params=[]
+        if KsurInt!=None:
+            ksi=[1]#if surround kappa is modulated, this loop is done once.
+        else:
+            pass
+        for i in range(0,len(ksi)):#From here on, each parameter is scanned as a nested loop, so each parameter combination can be considered
+            for m in range(0,len(phInt)):
+                phase=phInt[m]
+                for j in range(0,100):
+                    ku=-kstep*j+kus
+                    #print("upper kappa=%s"%(ku))
+                    if ckapun==True:#this ckapun thing might be problematic, so possible bug in scan due to this variable, seems like nothings up in regular scans tho
+                        kb=ku
+                        print("No center non-uniformity")
+                        if ku<0:
+                            break
+                    b=1#b is to bypass k loop when only center tuning is uniform and mod depth iteration is over
+                    for k in range(0,100):
+                        if b==0 and ckapun==True:
+                            break
+                        a=True#a is to iterate over kbel when ckapun is false
+                        if ckapun==True:
+                            a=False
+                        while a==True:
+                            kb=kstep*k+kbs
+                            a=False
+                        if kb>=ku and ckapun==False:#To ensure the lower limit does not exceed the upper limit
+                            break
+                        #print("below kappa=%s"%(kb))
+                        for l in range(0,100):
+                            depu=-depstep*l+depus
+                            for n in range(0,100):
+                                depb=depstep*n+depbs
+                                if depb>=depu:#To ensure the lower limit does not exceed the upper limit
+                                    b=0
+                                    break                                
+
+                                if KsurInt==None:
+                                    print("moddepbel=%s,moddepup=%s,kbel=%s,kup=%s,ksur=%s,phase=%s,ksurphase=%s"%(depb,depu,kb,ku,ksi[i],phase,phase+ksurphase))#The model parameters
+                                    dif,dec=data_dist(kc,ksi[i],maxInh,stdInt=[ku,kb],depInt=[depb,depu],fitThres=fit,errType=errType,phase=phase,deco=deco,dicti=dicti,se=se,errN=errN,bwType=bwType,ksurphase=ksurphase)#fit value and decoder list
+                                    if len(dec)==8:
+                                        print("fit params work for each of the surround for given rms threshold")
+                                        decoders.append(dec)#only when the model gives a good fit for all of the surround, outputs of the data_dist are appended.
+                                        params.append({"depb":depb,"depu":depu,"kb":kb,"ku":ku,"ksi":ksi[i],"phase":phase,"ksurphase":phase+ksurphase,"dif":dif})
+
+                                if KsurInt!=None:
+                                    print("surround kappa modulated")
+                                    for q in range(0,100):
+                                        sku=-KsurStep*q+KsurInt[0]#surround kappa upper value
+                                        for c in range(0,100):
+                                            skb=KsurStep*c+KsurInt[1]#surround kappa upper value
+                                            if skb>=sku:
+                                                break
+                                            print("moddepbel=%s,moddepup=%s,kbel=%s,kup=%s,ksurbel=%s,ksurup=%s,phase=%s,ksurphase=%s"%(depb,depu,kb,ku,skb,sku,phase,phase+ksurphase))#The model parameters
+                                            dif,dec=data_dist(kc,ksi[i],maxInh,stdInt=[ku,kb],depInt=[depb,depu],fitThres=fit,errType=errType,phase=phase,deco=deco,dicti=dicti,se=se,errN=errN,bwType=bwType,KsurInt=KsurInt)#fit value and decoder list
+                                            
+                                            if len(dec)==8:
+                                                print("fit params work for each of the surround for given rms threshold")
+                                                decoders.append(dec)#only when the model gives a good fit for all of the surround, outputs of the data_dist are appended.
+                                                params.append({"depb":depb,"depu":depu,"kb":kb,"ku":ku,"ksb":skb,"ksu":sku,"phase":phase,"ksurphase":phase+ksurphase,"dif":dif})
+        return decoders,params
+    
+    else:
+        stdInt=None;depInt=None;phase=None
+        decoders=[]
+        params=[]
+        for i in range(0,len(ksi)):#From here on, each parameter is scanned as a nested loop, so each parameter combination can be considered
+            for m in range(0,len(kci)):
+                for j in range(0,len(depval)):
+                    print("ckappa=%s,skappa=%s,maxinh=%s"%(kci[m],ksi[i],depval[j]))#The model parameters
+                    dif,dec=data_dist(kci[m],ksi[i],depval[j],stdInt=stdInt,depInt=depInt,fitThres=fit,errType=errType,phase=phase,deco=deco,dicti=dicti,se=se,errN=errN,bwType=bwType)#fit value and decoder list
+                    if len(dec)==8:
+                        print("fit params work for each of the surround for given rms threshold")
+                        decoders.append(dec)#only when the model gives a good fit for all of the surround, outputs of the data_dist are appended.
+                        params.append({"kci":kci[m],"ksi":ksi[i],"depval":depval[j],"dif":dif})
+        return decoders,params
+        
 """
 The parameter scan
 """    
@@ -325,6 +419,102 @@ for i in dicts:#change to dicts if you wanna redo the 1st scan
     decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,dicti=i)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
     f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,i), 'wb')
     pickle.dump(paraml, f)
+
+"""
+Scan the average observer without the se normalization
+"""
+fit=15;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
+decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,se=False)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,"nose"), 'wb')
+pickle.dump(paraml, f)
+decod="vecsum"
+decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,se=False)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,"nose"), 'wb')
+pickle.dump(paraml, f)
+
+"""
+Scan the average observer se normalization with phase=30°
+"""
+#phInt=np.linspace(0,157.5,8)#phase of depmod and stdInt (center units) can be scanned as well if wished.    
+fit=10;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
+ksi=np.linspace(1.0,2.3,14);kbs=0.7 ;kus=2 ;depbs=0.2 ;depus=0.8 ;kstep=0.2 ;depstep=0.2 ;phInt=[45]
+decl,paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s°.pckl'%(fit,decod,errType,date,phInt), 'wb')
+pickle.dump(paraml, f)
+
+decod="vecsum"
+
+decl,paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=[30],deco=decod)
+f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s°.pckl'%(fit,decod,errType,date,phInt), 'wb')
+pickle.dump(paraml, f)
+
+"""
+Scan the phase as well (preliminary, make the steps shorter to see whats up)
+"""
+fit=7;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
+ksi=np.linspace(1.0,2.3,14);kbs=0.7 ;kus=2 ;depbs=0.2 ;depus=0.8 ;kstep=0.2 ;depstep=0.2 ;phInt=np.linspace(0,157.5,8)
+decl,paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s°.pckl'%(fit,decod,errType,date,phInt), 'wb')
+pickle.dump(paraml, f)
+
+decod="vecsum"
+
+decl,paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod)
+f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s°.pckl'%(fit,decod,errType,date,phInt), 'wb')
+pickle.dump(paraml, f)
+
+"""
+Popvec decoder scan without error correction, expected is worsened data fit. fingers crossed :) Not quite as error correction not always dampens the error
+"""
+fit=10;errType="rms";date=date.today();decod="vecsum"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
+decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,"nocorr"), 'wb')#no decoder correction
+pickle.dump(paraml, f)
+
+"""
+Popvec decoder scan without error correction, but model maximum activity normalized so vecsum error is dampened
+"""
+decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,bwType="gradient/max")#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s_maxnorm.pckl'%(fit,decod,errType,date,"nocorr"), 'wb')#no decoder correction
+pickle.dump(paraml, f)
+
+"""
+Uniform model scan for both decoder types, should be pretty fast as only 3 parameters and expected is worsened fit.
+"""
+fit=10;errType="rms";date=date.today();decod="ml";bwType="regular"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
+ksi=np.linspace(1.0,2.3,14);kci=np.linspace(0.5,2.5,11);depval=np.linspace(0,1,6);kbs=None ;kus=None ;depbs=None ;depus=None ;kstep=None ;depstep=None ;phInt=None
+decl,paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod,kci=kci,depval=depval,bwType=bwType)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_uni.pckl'%(fit,decod,errType,date), 'wb')#no decoder correction
+pickle.dump(paraml, f)
+
+
+decod="vecsum" #the scan is run for 14.02.2019
+decl,paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod,kci=kci,depval=depval,bwType=bwType)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s_uni.pckl'%(fit,decod,errType,date,"nocorr"), 'wb')#no decoder correction
+pickle.dump(paraml, f)
+
+"""
+Scan only with surround modulation
+"""
+phInt=np.linspace(0,157.5,8)#phase of depmod and stdInt (center units) can be scanned as well if wished.    
+fit=10;errType="rms";date=date.today();decod="vecsum"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
+decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,ckapun=True)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_nocorr_unicent.pckl'%(fit,decod,errType,date), 'wb')#no decoder correction
+pickle.dump(paraml, f)
+
+decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
+decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,ckapun=True)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_unicent.pckl'%(fit,decod,errType,date), 'wb')#no decoder correction
+pickle.dump(paraml, f)
+
+"""
+Do surround kappa modulated scan on ml, then see if something better is up, and do the same for popvec if yea
+"""
+fit=7;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
+decl,paraml=scan_params(fit,np.linspace(0.1,2.3,12),0.8,2,0.2,0.6,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,KsurInt=[2.5,0.5],KsurStep=0.2,ksurphase=90)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_surkap_modulated.pckl'%(fit,decod,errType,date), 'wb')#no decoder correction
+pickle.dump(paraml, f)
+
 
 
 def auto_scan(thr,ksistep,kstep,depstep,param):
@@ -399,3 +589,5 @@ QUESTIONS:  -ROOT MEAN SQUARE OR MEAN ABSOLUTE ERROR????, what are other options
 Analysis of parameter values: First set a threshold for mean rms values, then look if parameters cluster, lastly check the fits in data by plotting to see where is the fail mainly,
 all ok if fits can capture important aspects like mmanshi etc. well.
 """
+
+

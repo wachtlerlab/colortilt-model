@@ -15,20 +15,23 @@ import numpy as np
 import cmath as c
 from scipy.optimize import curve_fit as fit
 import matplotlib.pyplot as plt
-from supplementary_functions import std2kappa, depth_modulator
+from supplementary_functions import std2kappa, depth_modulator, plotter
+from matplotlib.ticker import MultipleLocator, FormatStrFormatter, AutoMinorLocator
+
 
 class colmod:#add here the kappa phase variable.
     """The model class:
         This class contains all necessary model elements (center unit tuning curves, surround modulation rate etc.) for the given model parameters. 
         The output objects of this class are then further used for the decoder functions below.
         See also model_tester.py 
+        TO ADD: THE SURROUND MODULATION KAPPA PHASE DEPENDENCE!
     """
     x=np.ndarray.round(np.linspace(-60,420,num=4801),2)#round all these steps to .1 decimals
-    def __init__(self,Kcent,Ksur,maxInhRate,stdInt=[60,70],bwType="regular",phase=0,avgSur=180,startAvg=1,endAvg=360,depInt=[0.2,0.6],depmod=False,stdtransform=True):
+    def __init__(self,Kcent,Ksur,maxInhRate,stdInt=[60,70],bwType="regular",phase=0,avgSur=180,startAvg=1,endAvg=360,depInt=[0.2,0.6],depmod=False,stdtransform=True,KsurInt=None,ksurphase=0):
         """Parameters
         -------------
         Kcent: float. The concentration parameter Kappa of the center unit tuning curves. This parameter is of relevance only for the uniform model.
-        Ksur: float. The concentration parameter Kappa of the surround modulation curve.
+        Ksur: float. The concentration parameter Kappa of the surround modulation curve. This parameter is relevant only when KsurInt=None
         maxInhRate: float. The maximum surround suppression value, can be between 0-1. Zero means no surround suppression, 1 means in maximum suppression
         case the unit is completely silenced. This parameter is only relevant for the uniform model.
         stdInt: list, optional. The lower and upper limits of the standard deviation of the unit tuning curves for the non-uniform model. The values are given in degrees.
@@ -47,7 +50,9 @@ class colmod:#add here the kappa phase variable.
         depmod: boolean, optional. When True, the surround modulation depth is non-uniform, and it is otherwise uniform.
         stdtransform: boolean, optional. If True, stdInt should be given in standard deviation angle, otherwise stdInt is given as kappa. Note that when
         stdtransform==False, stdInt should be given as [ku,kb] where ku is the biggest kappa value and kb is the smallest kappa value
-        
+        KsurInt: list, optional. If a list value is given, then surround kappa is also phase modulated, meaning Ksur is irrelevant. Default is None. Give as [ku,kb]
+        ksurphase: integer, optional. Default is 0. If a number is specified, the phase of kappa surround is shifted by the given value in degrees, relative to center kappa.
+            
         Returns
         -------
         All returns can be called by colmod."the_object_name" . The return values are as follows:
@@ -77,8 +82,12 @@ class colmod:#add here the kappa phase variable.
             self.unitTracker=np.arange(startAvg,startAvg+len(self.totalAvg))#The index list for all other lists in the class.
         
         if bwType=="gradient/max":#non-uniform model maximum activity normalized
-            kappaDown=std2kappa(stdInt[0],1,1.5)[0]#highest kappa value of the lowest std value
-            kappaUp=std2kappa(stdInt[1],1,1.5)[0]#lowest kappa value of the highest std value
+            if stdtransform==False:#When false, stdInt is treated as Kappa values.
+                kappaDown=stdInt[0]#!stdInt[0] is the bigger kappa and stdInt[1] is smaller kappa
+                kappaUp=stdInt[1]
+            else:
+                kappaDown=std2kappa(stdInt[0],1,1.5)[0]#highest kappa value of the lowest std value
+                kappaUp=std2kappa(stdInt[1],1,1.5)[0]#lowest kappa value of the highest std value
             kapMod=(kappaDown-kappaUp)/2*np.cos(2*np.deg2rad(np.linspace(startAvg,endAvg,360)-phase))+kappaUp+(kappaDown-kappaUp)/2#Kappa Modulator, see also depth_modulator() in supplementary_functions.py
             for i in range(0,endAvg):#Create the unitTracker
                 avg=startAvg+i
@@ -102,7 +111,16 @@ class colmod:#add here the kappa phase variable.
                 self.centery.append(y/sum(y[np.where(colmod.x==0)[0][0]:np.where(colmod.x==360)[0][0]]))#Normalize the units by their total activity.
             self.unitTracker=np.arange(startAvg,startAvg+len(self.totalAvg))
         
-        self.surroundy=1/(2*np.pi)*np.e**(Ksur*np.cos(np.deg2rad(colmod.x)-np.deg2rad(avgSur)))#Surround modulation curve, von Mises distributed.
+        
+        if KsurInt!=None:#this one is for kappa surround
+            ksurDown=KsurInt[0]#big kappa limit
+            ksurUp=KsurInt[1]#small kappa limit
+            kSurMod=(ksurDown-ksurUp)/2*np.cos(2*np.deg2rad(np.linspace(0,359.5,720)-(phase+ksurphase)))+ksurUp+(ksurDown-ksurUp)/2#Kappa Modulator
+            kapval=kSurMod[np.where(np.linspace(0,359.5,720)==avgSur)[0][0]]
+            self.surroundy=1/(2*np.pi)*np.e**(kapval*np.cos(np.deg2rad(colmod.x)-np.deg2rad(avgSur)))#Surround modulation curve, von Mises distributed.
+        if KsurInt==None:
+            self.surroundy=1/(2*np.pi)*np.e**(Ksur*np.cos(np.deg2rad(colmod.x)-np.deg2rad(avgSur)))#Surround modulation curve, von Mises distributed.
+        
         if depmod==False:#Surround suppression is the same for all surround stimulus conditions
             self.surroundy=self.surroundy/max(self.surroundy)*maxInhRate#first divide by max value to get a 1 in peak, then multiply with max inh. rate to get the desired maximum inhibition.     
         if depmod==True: #if surround modulation depth is gradient, then the corresponding modulation value is taken via function depth_modulator.
@@ -192,16 +210,16 @@ class decoder:
             if dataFit==True:#If model fit to the data is to be done, only the measured angles are taken into consideration
                 datAng=avgSur+np.linspace(-180,157.5,16)#transform the data center-surround angle difference into absolute angular values
                 datAng[np.where(datAng>360)]=datAng[np.where(datAng>360)]-360#Ensure there is no angle bigger than 360°
-                datAng[np.where(datAng<0)]=datAng[np.where(datAng<0)]+360#Ensure there is no angle smaller than 360°
+                datAng[np.where(datAng<0)]=datAng[np.where(datAng<0)]+360#Ensure there is no angle smaller than 0°
 
             if errNorm==True:
-                    popNoSurVecx=[]#The tuning curve maximum activity vector x values without surround modulation.
-                    for i in range(0,len(unitTracker)):
-                        popNoSur=decoder.nosurround(unitTracker[i],x,centery).noSur[i]#the unit activity without surround
-                                                                                      #for center stimulus=preferred hue angle
-                        popNoSurVecx.append(popNoSur*np.e**(1j*np.deg2rad(unitTracker[i])).real)
-                    circRad=max(popNoSurVecx)-min(popNoSurVecx)#The radius of the circle for the vector population error correction
-                    normVal=np.array(circRad)/np.array(popNoSurVecx)
+                popNoSurVecx=[]#The tuning curve maximum activity vector x values without surround modulation.
+                for i in range(0,len(unitTracker)):
+                    popNoSur=decoder.nosurround(unitTracker[i],x,centery).noSur[i]#the unit activity without surround
+                                                                                  #for center stimulus=preferred hue angle
+                    popNoSurVecx.append(popNoSur*np.e**(1j*np.deg2rad(unitTracker[i])).real)
+                circRad=max(popNoSurVecx)-min(popNoSurVecx)#The radius of the circle for the vector population error correction
+                normVal=np.array(circRad)/np.array(popNoSurVecx)
             def vector_decoder(stimulusAngle,unitStep=1):#vector sum decoding (used in Gilbert et al. 1990).
                 surDecoder=[]
                 for i in range(0,len(resulty),unitStep):
@@ -349,7 +367,7 @@ class decoder:
                                      #so the model is not further considered and return values are nonsensical.
                     print("stimAng=%s,decAng=%s"%(stimulusAngle,decodedAng))
                     print("decoded angle is ambigious, model possibly has irrealistic parameter values")
-                    raise Exception("The decoded angle is ambigious, model possibly has irrealistic parameter values")
+                    #raise Exception("The decoded angle is ambigious, model possibly has irrealistic parameter values")
                     return [99999],9999999999,999999999,9999999999 #to make data fit non functional in any case
                 if avgSur!=180:#For the surround stimulus different than 180°, reference point on the angle cirle is shifted so, that the surround angle 
                                #in the middle. This is important to transform the center surround angle hue difference, that center hue angles within the
@@ -528,6 +546,82 @@ class decoder:
             self.centSurDif, self.angShift = zip(*sorted(zip(self.centSurDif,self.angShift)))#sort the values from centsurdif=-180 to +180!
             self.parameters=list(map(list,zip(*self.parameters)))#Transpose the list, so that each sublist corresponds to each parameter (amp, kappa, avg)
 
+
+"""
+Effect of surround kappa phase modulation
+"""
+class figures():
+    def surphase():
+        surs=[135,90,45,180,0,225,270,315]
+        cols=["red","green","brown","yellow","blue"]
+        fig=plt.figure(1)
+        fig2=plt.figure(2)
+        ax2=fig2.gca()
+        for j in surs:
+            ax=plotter.subplotter(fig,surs.index(j))
+            for i in np.linspace(0,90,5):
+                print(i,j)
+                colm=colmod(Kcent=None,Ksur=None,maxInhRate=None,stdInt=[2,1.8],bwType="gradient/sum",phase=22.5,avgSur=j,depInt=[0.4,0.6],stdtransform=False,depmod=True,KsurInt=[2.5,0.5],ksurphase=i)
+                ax2.plot(colm.x,colm.surroundy,label=j)
+                maxl=decoder.ml(colm.x,colm.centery,colm.resulty,colm.unitTracker,tabStep=5,avgSur=j)
+                ax.plot(maxl.centSurDif,maxl.angShift,label=i+22.5,color=cols[int(i/22.5)])
+                ax.plot([0,0],[-25,25],color="black",linewidth=0.8)
+                ax.plot([-185,185],[0,0],color="black",linewidth=0.8)
+                ax.set_ylim(bottom=-25,top=25)#y axis limit +-25
+                ax.set_xlim([-185,185])
+                ax.set_xticks(np.linspace(-180,180,9))#x ticks between +-180 and ticks are at cardinal and oblique angles.
+                ax.set_yticks(np.linspace(-20,20,5))#x ticks between +-180 and ticks are at cardinal and oblique angles.
+                ax.tick_params(axis='both', which='major', labelsize=15)#major ticks are increazed in label size
+                ax.xaxis.set_major_locator(MultipleLocator(90))#major ticks at cardinal angles.
+                ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+                ax.xaxis.set_minor_locator(MultipleLocator(45))#minor ticks at obliques.
+            print("1 subplot done")
+        ax.legend(loc="best",bbox_to_anchor=(1,1))
+        ax2.legend()
+        return
+    
+    """
+    Effect of center kappa phase modulation. To bypass the surround modulation effect in the non uniform model, the surround modulation is kept constant over all
+    surround hues by giving the min and max values the same.
+    """
+    def centphase():
+        surs=[135,90,45,180,0,225,270,315]
+        cols=["red","green","brown","yellow","blue"]
+        fig=plt.figure(3)
+        fig2=plt.figure(4)
+        ax2=fig2.gca()
+        for j in surs:
+            ax=plotter.subplotter(fig,surs.index(j))
+            for i in np.linspace(0,90,5):
+                print(i,j)
+                colm=colmod(Kcent=None,Ksur=2.3,maxInhRate=None,stdInt=[2,1.8],bwType="gradient/sum",phase=i,avgSur=j,depInt=[0.4,0.4],stdtransform=False,depmod=True)
+                maxl=decoder.ml(colm.x,colm.centery,colm.resulty,colm.unitTracker,tabStep=5,avgSur=j)
+                ax2.plot(colm.x,colm.surroundy)
+                ax.plot(maxl.centSurDif,maxl.angShift,label=i,color=cols[int(i/22.5)])
+                ax.plot([0,0],[-25,25],color="black",linewidth=0.8)
+                ax.plot([-185,185],[0,0],color="black",linewidth=0.8)
+                ax.set_ylim(bottom=-25,top=25)#y axis limit +-25
+                ax.set_xlim([-185,185])
+                ax.set_xticks(np.linspace(-180,180,9))#x ticks between +-180 and ticks are at cardinal and oblique angles.
+                ax.set_yticks(np.linspace(-20,20,5))#x ticks between +-180 and ticks are at cardinal and oblique angles.
+                ax.tick_params(axis='both', which='major', labelsize=15)#major ticks are increazed in label size
+                ax.xaxis.set_major_locator(MultipleLocator(90))#major ticks at cardinal angles.
+                ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+                ax.xaxis.set_minor_locator(MultipleLocator(45))#minor ticks at obliques.
+            print("1 subplot done")
+        ax.legend(loc="best",bbox_to_anchor=(1,1))
+        return
+
+"""
+If necessary, below is plot of surround suppression curves as a function of the surround hue
+"""
+"""
+plt.figure()
+for i in np.linspace(0,315,15):
+    colMod=colmod(1,2.3,1,stdInt=[1.2,0.9],bwType="gradient/sum",phase=22.5,depInt=[0.2,0.3999999999999999],depmod=True,stdtransform=False,KsurInt=[2.5,0.5],avgSur=i,ksurphase=90)
+    plt.plot(colMod.x,colMod.surroundy,color="black")
+"""   
+    
 """
 Thesis figure supplement 2
 Also in thesis_figures.py
