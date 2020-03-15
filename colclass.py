@@ -35,7 +35,7 @@ class colmod:#add here the kappa phase variable.
         TO ADD: THE SURROUND MODULATION KAPPA PHASE DEPENDENCE!
     """
     x=np.ndarray.round(np.linspace(-60,420,num=4801),2)#round all these steps to .1 decimals
-    def __init__(self,Kcent,Ksur,maxInhRate,stdInt=[60,70],bwType="regular",phase=0,avgSur=180,startAvg=1,endAvg=360,depInt=[0.2,0.6],depmod=False,stdtransform=True,KsurInt=None,ksurphase=0):
+    def __init__(self,Kcent,Ksur,maxInhRate,stdInt=[60,70],bwType="regular",phase=0,avgSur=180,startAvg=1,endAvg=360,depInt=[0.2,0.6],depmod=False,stdtransform=True,KsurInt=None,ksurphase=0,kcentphase=None):
         """Parameters
         -------------
         Kcent: float. The concentration parameter Kappa of the center unit tuning curves. This parameter is of relevance only for the uniform model.
@@ -59,8 +59,10 @@ class colmod:#add here the kappa phase variable.
         stdtransform: boolean, optional. If True, stdInt should be given in standard deviation angle, otherwise stdInt is given as kappa. Note that when
         stdtransform==False, stdInt should be given as [ku,kb] where ku is the biggest kappa value and kb is the smallest kappa value
         KsurInt: list, optional. If a list value is given, then surround kappa is also phase modulated, meaning Ksur is irrelevant. Default is None. Give as [ku,kb]
-        ksurphase: integer, optional. Default is 0. If a number is specified, the phase of kappa surround is shifted by the given value in degrees, relative to center kappa.
-            
+        ksurphase: integer, optional. Default is 0. If a number is specified, the phase of surround modulation kappa  is changed by the given value in degrees.
+        kcentphase: integer, optional. Default is None. If a number is specified, the phase of center unit kappa is changed by the given value in degrees. If the value
+        is None (as in default), then the center unit phase modulation is via the variable phase.
+    
         Returns
         -------
         All returns can be called by colmod."the_object_name" . The return values are as follows:
@@ -96,7 +98,10 @@ class colmod:#add here the kappa phase variable.
             else:
                 kappaDown=std2kappa(stdInt[0],1,1.5)[0]#highest kappa value of the lowest std value
                 kappaUp=std2kappa(stdInt[1],1,1.5)[0]#lowest kappa value of the highest std value
-            kapMod=(kappaDown-kappaUp)/2*np.cos(2*np.deg2rad(np.linspace(startAvg,endAvg,360)-phase))+kappaUp+(kappaDown-kappaUp)/2#Kappa Modulator, see also depth_modulator() in supplementary_functions.py
+            if kcentphase==None:
+                kapMod=(kappaDown-kappaUp)/2*np.cos(2*np.deg2rad(np.linspace(startAvg,endAvg,360)-phase))+kappaUp+(kappaDown-kappaUp)/2#Kappa Modulator, see also depth_modulator() in supplementary_functions.py
+            elif kcentphase!=None:
+                kapMod=(kappaDown-kappaUp)/2*np.cos(2*np.deg2rad(np.linspace(startAvg,endAvg,360)-kcentphase))+kappaUp+(kappaDown-kappaUp)/2#Kappa Modulator, see also depth_modulator() in supplementary_functions.py
             for i in range(0,endAvg):#Create the unitTracker
                 avg=startAvg+i
                 self.totalAvg.append(avg)
@@ -111,7 +116,10 @@ class colmod:#add here the kappa phase variable.
             else:
                 kappaDown=std2kappa(stdInt[0],1,1.5)[0]#here kappa down is the bigger kappa
                 kappaUp=std2kappa(stdInt[1],1,1.5)[0]#other way around, as std up is kappa down
-            kapMod=(kappaDown-kappaUp)/2*np.cos(2*np.deg2rad(np.linspace(startAvg,endAvg,360)-phase))+kappaUp+(kappaDown-kappaUp)/2#Kappa Modulator
+            if kcentphase==None:
+                kapMod=(kappaDown-kappaUp)/2*np.cos(2*np.deg2rad(np.linspace(startAvg,endAvg,360)-phase))+kappaUp+(kappaDown-kappaUp)/2#Kappa Modulator, see also depth_modulator() in supplementary_functions.py
+            elif kcentphase!=None:
+                kapMod=(kappaDown-kappaUp)/2*np.cos(2*np.deg2rad(np.linspace(startAvg,endAvg,360)-kcentphase))+kappaUp+(kappaDown-kappaUp)/2#Kappa Modulator, see also depth_modulator() in supplementary_functions.py
             for i in range(0,endAvg):
                 avg=startAvg+i
                 self.totalAvg.append(avg)
@@ -123,7 +131,7 @@ class colmod:#add here the kappa phase variable.
         if KsurInt!=None:#this one is for kappa surround
             ksurDown=KsurInt[0]#big kappa limit
             ksurUp=KsurInt[1]#small kappa limit
-            kSurMod=(ksurDown-ksurUp)/2*np.cos(2*np.deg2rad(np.linspace(0,359.5,720)-(phase+ksurphase)))+ksurUp+(ksurDown-ksurUp)/2#Kappa Modulator
+            kSurMod=(ksurDown-ksurUp)/2*np.cos(2*np.deg2rad(np.linspace(0,359.5,720)-(ksurphase)))+ksurUp+(ksurDown-ksurUp)/2#Kappa Modulator
             kapval=kSurMod[np.where(np.linspace(0,359.5,720)==avgSur)[0][0]]
             self.surroundy=1/(2*np.pi)*np.e**(kapval*np.cos(np.deg2rad(colmod.x)-np.deg2rad(avgSur)))#Surround modulation curve, von Mises distributed.
         if KsurInt==None:
@@ -620,6 +628,25 @@ class figures():
         ax.legend(loc="best",bbox_to_anchor=(1,1))
         return
 
+
+"""
+Try if the different phase variable work correct by plotting each setting
+fig1=plt.figure(1)
+fig2=plt.figure(2)
+
+for i in np.linspace(0,180,9):
+    a=colmod(1,2,1,stdInt=[2,1],bwType="gradient/sum",phase=0,depmod=True,stdtransform=False,KsurInt=[3,0.5],kcentphase=90,ksurphase=45,avgSur=i)
+    for j in range(0,18):#cneter independent of what the surround hue angle is
+        ax1=fig1.gca()
+        ax1.plot(a.x,a.centery[j*10])
+    ax2=fig2.gca()
+    ax2.plot(a.x,a.surroundy)
+#All seems fine, ready for the scan.
+"""
+
+
+
+   
 """
 If necessary, below is plot of surround suppression curves as a function of the surround hue
 """
