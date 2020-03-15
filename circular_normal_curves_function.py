@@ -14,9 +14,9 @@ Used packages: numpy, matplotlib, cmath, sys
 import numpy as np
 import matplotlib.pyplot as plt
 import cmath as c
+from colclass import colmod,pathes
 import sys
-sys.path.insert(0,r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\python")#!CHANGE THE DIRECTORY WHERE colclass.py is residing.
-from colclass import colmod
+sys.path.insert(0,pathes.runpath)#!CHANGE THE DIRECTORY WHERE colclass.py is residing.
 
 """
 Create wrapped normal distribution curve for center population ?WHAT I DO HERE IS ACTUALLY TAKING THE MEAN OF POPULATION IN THE DOMAIN OF CIRCULAR STATISTICS?

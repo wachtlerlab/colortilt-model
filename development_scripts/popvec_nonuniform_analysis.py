@@ -19,6 +19,8 @@ from supplementary_functions import std2kappa, depth_modulator, plotter, param_d
 import cmath as c
 from scipy import optimize as op
 
+
+
 path=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\thesis_figures"
 
 """

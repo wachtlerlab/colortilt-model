@@ -10,12 +10,12 @@ The plots of the decoding errors for each decoder in the non-uniform model
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mp
-import sys
-sys.path.insert(0,r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\python")#!Change the directory where colclass.py and supplementary_functions.py are
-from supplementary_functions import std2kappa, param_dict, plotter
 import colclass
+import sys
+sys.path.insert(0,colclass.pathes.runpath)#!Change the directory where colclass.py and supplementary_functions.py are
+from supplementary_functions import std2kappa, param_dict, plotter
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter, AutoMinorLocator
-path=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\thesis_figures"
+path=colclass.pathes.figpath
 
 '''
 The Bandwiths of the center units vary: for 0° BW 60°, then increasing gradually to 70° until 90° unit then same thing again!

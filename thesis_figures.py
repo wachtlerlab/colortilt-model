@@ -14,14 +14,13 @@ should be first chosen to run.
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mp
-import sys
-sys.path.insert(0,r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\python")#Change the directory accordingly.
 import colclass as col
+from colclass import pathes
 from scipy import stats as st
 from supplementary_functions import std2kappa, depth_modulator, plotter, param_dict
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter, AutoMinorLocator
-path=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\thesis_figures"
 
+path=pathes.figpath
 
 """
 decoder labels/colors, this labeling is used for all figures for consistency.

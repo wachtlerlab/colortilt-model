@@ -12,17 +12,19 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mp
-import sys
-sys.path.insert(0,r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\python")#!Change the directory accordingly
 import colclass as col
+import sys
+sys.path.insert(0,col.pathes.runpath)#!Change the directory accordingly
 from scipy import stats as st
 from supplementary_functions import std2kappa, depth_modulator, plotter, param_dict
 import pickle
 from datetime import date
 
+sp=col.pathes.scanpath
 """
 Scan where kapa surround and suppression strength phases are same but center kappa phase differs.
 sur phase 22.5 cent phase orthogonal and other way around
+TW 20.03.20 14.00 skype
 """
 
 """
@@ -368,16 +370,16 @@ This part is written later on for possible parameter scans in the next time, so 
 runs. 
 """
 try: 
-    with open('paraml_fit_%s_decoder_%s_errType_%s_%s.pckl'%(fit,decod,errType,date),"rb") as file:
+    with open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s.pckl'%(fit,decod,errType,date),"rb") as file:
         pickl=pickle.load(file)
 except FileNotFoundError:    
     print("creating the pickle file")
-    f = open('paraml_fit_%s_decoder_%s_errType_%s_%s.pckl'%(fit,decod,errType,date), 'wb')
+    f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s.pckl'%(fit,decod,errType,date), 'wb')
     pickle.dump(paraml, f)
     print("pickle file is created")
 except EOFError:
     print("filling the empty pickle file")
-    f = open('paraml_fit_%s_decoder_%s_errType_%s_%s.pckl'%(fit,decod,errType,date), 'wb')
+    f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s.pckl'%(fit,decod,errType,date), 'wb')
     pickle.dump(paraml, f)
     print("pickle file is filled")
 
@@ -411,13 +413,13 @@ dicts=["dictHN","dictLH","dictMH","dictSU","dictTW"]
 fit=10;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
 for i in dicts:#change to dicts if you wanna redo the 1st scan
     decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,dicti=i)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
-    f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,i), 'wb')
+    f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,i), 'wb')
     pickle.dump(paraml, f)
 
 decod="vecsum"
 for i in dicts:#change to dicts if you wanna redo the 1st scan
     decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,dicti=i)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
-    f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,i), 'wb')
+    f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,i), 'wb')
     pickle.dump(paraml, f)
 
 """
@@ -425,11 +427,11 @@ Scan the average observer without the se normalization
 """
 fit=15;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
 decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,se=False)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
-f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,"nose"), 'wb')
+f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,"nose"), 'wb')
 pickle.dump(paraml, f)
 decod="vecsum"
 decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,se=False)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
-f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,"nose"), 'wb')
+f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,"nose"), 'wb')
 pickle.dump(paraml, f)
 
 """
@@ -439,13 +441,13 @@ Scan the average observer se normalization with phase=30°
 fit=10;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
 ksi=np.linspace(1.0,2.3,14);kbs=0.7 ;kus=2 ;depbs=0.2 ;depus=0.8 ;kstep=0.2 ;depstep=0.2 ;phInt=[45]
 decl,paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
-f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s°.pckl'%(fit,decod,errType,date,phInt), 'wb')
+f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s°.pckl'%(fit,decod,errType,date,phInt), 'wb')
 pickle.dump(paraml, f)
 
 decod="vecsum"
 
 decl,paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=[30],deco=decod)
-f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s°.pckl'%(fit,decod,errType,date,phInt), 'wb')
+f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s°.pckl'%(fit,decod,errType,date,phInt), 'wb')
 pickle.dump(paraml, f)
 
 """
@@ -454,13 +456,13 @@ Scan the phase as well (preliminary, make the steps shorter to see whats up)
 fit=7;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
 ksi=np.linspace(1.0,2.3,14);kbs=0.7 ;kus=2 ;depbs=0.2 ;depus=0.8 ;kstep=0.2 ;depstep=0.2 ;phInt=np.linspace(0,157.5,8)
 decl,paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
-f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s°.pckl'%(fit,decod,errType,date,phInt), 'wb')
+f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s°.pckl'%(fit,decod,errType,date,phInt), 'wb')
 pickle.dump(paraml, f)
 
 decod="vecsum"
 
 decl,paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod)
-f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s°.pckl'%(fit,decod,errType,date,phInt), 'wb')
+f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s°.pckl'%(fit,decod,errType,date,phInt), 'wb')
 pickle.dump(paraml, f)
 
 """
@@ -468,14 +470,14 @@ Popvec decoder scan without error correction, expected is worsened data fit. fin
 """
 fit=10;errType="rms";date=date.today();decod="vecsum"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
 decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
-f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,"nocorr"), 'wb')#no decoder correction
+f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,"nocorr"), 'wb')#no decoder correction
 pickle.dump(paraml, f)
 
 """
 Popvec decoder scan without error correction, but model maximum activity normalized so vecsum error is dampened
 """
 decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,bwType="gradient/max")#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
-f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s_maxnorm.pckl'%(fit,decod,errType,date,"nocorr"), 'wb')#no decoder correction
+f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s_maxnorm.pckl'%(fit,decod,errType,date,"nocorr"), 'wb')#no decoder correction
 pickle.dump(paraml, f)
 
 """
@@ -484,13 +486,13 @@ Uniform model scan for both decoder types, should be pretty fast as only 3 param
 fit=10;errType="rms";date=date.today();decod="ml";bwType="regular"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
 ksi=np.linspace(1.0,2.3,14);kci=np.linspace(0.5,2.5,11);depval=np.linspace(0,1,6);kbs=None ;kus=None ;depbs=None ;depus=None ;kstep=None ;depstep=None ;phInt=None
 decl,paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod,kci=kci,depval=depval,bwType=bwType)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
-f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_uni.pckl'%(fit,decod,errType,date), 'wb')#no decoder correction
+f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_uni.pckl'%(fit,decod,errType,date), 'wb')#no decoder correction
 pickle.dump(paraml, f)
 
 
 decod="vecsum" #the scan is run for 14.02.2019
 decl,paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod,kci=kci,depval=depval,bwType=bwType)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
-f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_%s_uni.pckl'%(fit,decod,errType,date,"nocorr"), 'wb')#no decoder correction
+f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s_uni.pckl'%(fit,decod,errType,date,"nocorr"), 'wb')#no decoder correction
 pickle.dump(paraml, f)
 
 """
@@ -499,12 +501,12 @@ Scan only with surround modulation
 phInt=np.linspace(0,157.5,8)#phase of depmod and stdInt (center units) can be scanned as well if wished.    
 fit=10;errType="rms";date=date.today();decod="vecsum"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
 decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,ckapun=True)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
-f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_nocorr_unicent.pckl'%(fit,decod,errType,date), 'wb')#no decoder correction
+f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_nocorr_unicent.pckl'%(fit,decod,errType,date), 'wb')#no decoder correction
 pickle.dump(paraml, f)
 
 decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
 decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,ckapun=True)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
-f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_unicent.pckl'%(fit,decod,errType,date), 'wb')#no decoder correction
+f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_unicent.pckl'%(fit,decod,errType,date), 'wb')#no decoder correction
 pickle.dump(paraml, f)
 
 """
@@ -512,7 +514,7 @@ Do surround kappa modulated scan on ml, then see if something better is up, and 
 """
 fit=7;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
 decl,paraml=scan_params(fit,np.linspace(0.1,2.3,12),0.8,2,0.2,0.6,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,KsurInt=[2.5,0.5],KsurStep=0.2,ksurphase=90)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
-f = open('paraml_fit_%s_decoder_%s_errType_%s_%s_surkap_modulated.pckl'%(fit,decod,errType,date), 'wb')#no decoder correction
+f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_surkap_modulated.pckl'%(fit,decod,errType,date), 'wb')#no decoder correction
 pickle.dump(paraml, f)
 
 

@@ -49,22 +49,23 @@ def plot_adjuster(manual=False):
                 break
         return
     else:
-        path=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\thesis_figures"
-        mng = plt.get_current_fig_manager()
-        mng.window.state("zoomed")
-        plt.savefig(path+"\\gs_depmod_tuning_curves.pdf")
-        plt.close()
-        
-        plt.subplots_adjust(left=0.16, bottom=0.09, right=0.74, top=0.88, wspace=0.05, hspace=0.08)
+        path=col.pathes.figpath
         mng = plt.get_current_fig_manager()
         mng.window.state("zoomed")
         sleep(1)
+        plt.savefig(path+"\\gs_depmod_tuning_curves.pdf")
+        plt.close()
+        
+        mng = plt.get_current_fig_manager()
+        mng.window.state("zoomed")
+        sleep(1)
+        plt.subplots_adjust(left=0.16, bottom=0.09, right=0.74, top=0.88, wspace=0.05, hspace=0.08)
         plt.savefig(path+"\\gs_depmod_popact.pdf")
         plt.close()
         
-        plt.subplots_adjust(left=0.14, bottom=0.09, right=0.8, top=0.88, wspace=0.1, hspace=0.1)
         mng = plt.get_current_fig_manager()
         mng.window.state("zoomed")
+        plt.subplots_adjust(left=0.14, bottom=0.09, right=0.8, top=0.88, wspace=0.1, hspace=0.1)
         sleep(1)
         plt.savefig(path+"\\gs_depmod_tilt_curve.pdf")
         plt.close()
@@ -253,7 +254,7 @@ dictPargfDep=surr_analysis(surrInt,grType="gf",depmod=True)
 
 dictPargs=surr_analysis(surrInt,grType="gs",depmod=False) 
 dictPargsDep=surr_analysis(surrInt,grType="gs",depmod=True)#FIGURE 5 
-plot_adjuster()#Make automatic, that it saves the figure as PDF DONE, some documentation would be sweet
+plot_adjuster()#Make automatic, that it saves the figure as PDF DONE, some documentation would be sweet, currently not working as wished
 
 """  
 These are the artifacts from last working session, where each title and axis labels were given manually. 

@@ -15,20 +15,21 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as cls
-import sys
-sys.path.insert(0,r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\python")#!Change the directory accordingly
 import colclass as col
+import sys
+sys.path.insert(0,col.pathes.runpath)#!Change the directory accordingly
 from supplementary_functions import std2kappa, depth_modulator, plotter, param_dict
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter, AutoMinorLocator
 from mpl_toolkits.mplot3d import Axes3D
-path=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\thesis_figures"
+path=col.pathes.figpath
 from datetime import date
 
 dictTot=pickle.load(open("dicttot.pckl","rb"))#Dictionary of the subject average.
 date=date.today()
 
-def file_opener(dataName,rmsThres): 
-    paraml=pickle.load(open("%s.pckl"%(dataName),"rb"))#Pickle file of the scanned parameters. This name should be changed according to the file wished to be analyzed.
+def file_opener(dataName,rmsThres):
+    scpath=col.pathes.scanpath
+    paraml=pickle.load(open(scpath+"\\%s.pckl"%(dataName),"rb"))#Pickle file of the scanned parameters. This name should be changed according to the file wished to be analyzed.
     meanrms=[]
     #rmsThres=4.5#the RMS threshold for filtering the scan parameters
     for i in range(0,len(paraml)):

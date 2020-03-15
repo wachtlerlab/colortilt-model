@@ -8,6 +8,8 @@ Created on Wed May 29 01:19:20 2019
 Class for the model and decoder objects. This script contains all essential codes and functions for the model and decoders.
 This script is imported to other analysis scripts.
 
+Specify the path here once.
+
 Used libraries and modules:
 NumPy, cmath, SciPy
 '''
@@ -18,7 +20,13 @@ import matplotlib.pyplot as plt
 from supplementary_functions import std2kappa, depth_modulator, plotter
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter, AutoMinorLocator
 
-
+class pathes():
+    """Specify the directory pathways for saving figures (figpath), saving scans (scanpath) or running other scripts (runpath)
+    """
+    figpath=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\thesis_figures" #//TODO change the figure paths in scripts
+    runpath=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\python" #//TODO change the paths in scripts
+    scanpath=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\python\scans"   #//TODO change the scan paths in scan scripts
+    
 class colmod:#add here the kappa phase variable.
     """The model class:
         This class contains all necessary model elements (center unit tuning curves, surround modulation rate etc.) for the given model parameters. 
