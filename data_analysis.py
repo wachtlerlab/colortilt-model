@@ -21,11 +21,6 @@ import pickle
 from datetime import date
 
 sp=col.pathes.scanpath
-"""
-Scan where kapa surround and suppression strength phases are same but center kappa phase differs.
-sur phase 22.5 cent phase orthogonal and other way around
-TW 20.03.20 14.00 skype
-"""
 
 """
 Import the data
@@ -102,7 +97,7 @@ for i in range(0,360,45):
     if i==315:
         print("all ok, ready to roll with cfi")
 
-def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",deco="ml",dicti=dictTot,se=True,errN=False,bwType="gradient/sum",KsurInt=None,ksurphase=0):
+def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",deco="ml",dicti=dictTot,se=True,errN=False,bwType="gradient/sum",KsurInt=None,ksurphase=None,kcentphase=None):
     """
     Data fit function:
         Checks the fit quality of the model with given parameters to the psychophysics data by using the given error estimation method.
@@ -131,18 +126,24 @@ def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",
         errN: boolean, optional. Only useful vor population vector decoder. If true, the decoder is error corrected (for details see colclass.)
         KsurInt: list, optional. If a list value is given, then surround kappa is also phase modulated. Default is None. Give as [ku,kb]
         ksurphase: integer, optional. Default is 0. If a number is specified, the phase of kappa surround is shifted by the given value in degrees.
+        kcentphase: integer, optional. Default is None. If a number is specified, the phase of center unit kappa is changed by the given value in degrees. If the value
+        is None (as in default), then the center unit phase modulation is via the variable "phase" (see colclass.py).
+    
 
         Note that the rms and mae values are given in terms of data standard error values. For example, rms=1 means the RMSEA between data and model is in average 1 standard error
         for each of the datapoint measured.
         
+        From 15.03.2020 on, the decoder variable is no more returned by the function as this method slows down the scan significantly and the wished decoder object can always be 
+        recreated by using the returned parameters by the scan_params() function.
+        
         Returns
         -------
-        rs: dictionary. The dictionary of fit value for each of the surround condition. 
-        decobjs: dictionary. The dictionary of the decoder object for each of the surround condition.
+        rs: dictionary. The dictionary of fit value for each of the surround condition.
+        modelfit: boolean. If True, the model fit works for all surround conditions, so the parameters are appended to the dictionary in function scan_params
     """
     surrAvg=np.linspace(0,315,8)#measured surround conditions in Klauke & Wachtler paper
     rs={}#Dictionary of the fit value
-    decobjs={}#Dictionary of the ML-decoder object
+    modelfit=False
     
     """
     Create the model and decoder objects for each surround condition, check if the fit is good enough in each surround step and stop if not
@@ -154,7 +155,7 @@ def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",
             colMod=col.colmod(Kcent,Ksur,maxInh,avgSur=surrAvg[i],bwType=bwType)
         elif bwType!="regular":
             print("non-uniform")
-            colMod=col.colmod(Kcent,Ksur,maxInh,stdInt,bwType=bwType,phase=phase,avgSur=surrAvg[i],depInt=depInt,depmod=True,stdtransform=False,KsurInt=KsurInt,ksurphase=ksurphase)#see colclass.py for details.
+            colMod=col.colmod(Kcent,Ksur,maxInh,stdInt,bwType=bwType,phase=phase,avgSur=surrAvg[i],depInt=depInt,depmod=True,stdtransform=False,KsurInt=KsurInt,ksurphase=ksurphase,kcentphase=kcentphase)#see colclass.py for details.
 
         if deco=="vecsum":
             print("vecsum decoder")
@@ -230,11 +231,12 @@ def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",
         Create the dictionaries for function output
         """
         rs.update({surrAvg[i]:sumval})
-        decobjs.update({surrAvg[i]:dec})
         print("Next surround")
-    return rs,decobjs
+        if i==len(surrAvg)-1:
+            modelfit=True
+    return rs,modelfit
 
-def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",deco="ml",dicti="dictTot",se=True,errN=False,bwType="gradient/sum",kci=None,depval=None,ckapun=False,KsurInt=None,KsurStep=None,ksurphase=0):
+def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",deco="ml",dicti="dictTot",se=True,errN=False,bwType="gradient/sum",kci=None,depval=None,ckapun=False,KsurInt=None,KsurStep=None,ksurphase=None,kcentphase=None):
     """Parameter scan function:
         This function uses the data_dist() function to scan through all parameter combinations given in the function. Warning: The scanning
         process takes long time, in some cases even days. 
@@ -262,7 +264,9 @@ def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",de
         KsurInt: list, optional. If a list value is given, then surround kappa is also phase modulated. Default is None. Give as [ku,kb]
         KsurStep: float. The binning of KsurInt during scan.
         ksurphase: integer, optional. Default is 0. If a number is specified, the phase of kappa surround is shifted by the given value in degrees.
-
+        kcentphase: integer, optional. Default is None. If a number is specified, the phase of center unit kappa is changed by the given value in degrees. If the value
+        is None (as in default), then the center unit phase modulation is via the variable "phase" (see colclass.py).
+    
         
         For the uniform analysis, following three parameters are necessary: center kappa, surround kappa, modulation strength, 3 free parameters as 
         opposed to non-uniform case (which has additional to surround kappa the center kapa max/min values and surround suppression max/min values as a function 
@@ -270,7 +274,6 @@ def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",de
         
         Returns
         -------
-        decoders: list. The list of decoder objects which yield a good data fit. Maximum likelihood decoder is used.
         params: list. The list of dictionaries including parameters of the models giving good model fits.
     """
     print("decoder=%s for the dictionary %s"%(deco,dicti))
@@ -278,7 +281,6 @@ def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",de
     if bwType!="regular":
         kc=1#Kcent is arbitrary as the model is non-uniform!
         maxInh=1#these 2 parameters irrelevant, they dont do any job here!
-        decoders=[]
         params=[]
         if KsurInt!=None:
             ksi=[1]#if surround kappa is modulated, this loop is done once.
@@ -315,35 +317,24 @@ def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",de
                                 if depb>=depu:#To ensure the lower limit does not exceed the upper limit
                                     b=0
                                     break                                
+                                print("moddepbel=%s,moddepup=%s,kbel=%s,kup=%s,ksur=%s,phase=%s,ksurphase=%s,kcentphase=%s"%(depb,depu,kb,ku,ksi[i],phase,ksurphase,kcentphase))#The model parameters
+                                dif,modfit=data_dist(kc,ksi[i],maxInh,stdInt=[ku,kb],depInt=[depb,depu],fitThres=fit,errType=errType,phase=phase,deco=deco,dicti=dicti,se=se,errN=errN,bwType=bwType,KsurInt=KsurInt,ksurphase=ksurphase,kcentphase=kcentphase)#fit value
+                                if modfit==True:
+                                    moddict={}
+                                    moddict.update({"depb":depb,"depu":depu,"kb":kb,"ku":ku,"ksi":ksi[i],"phase":phase,"dif":dif})
+                                    if KsurInt!=None:
+                                        print("surround kappa modulated")
+                                        moddict.update({"ksurphase":ksurphase})
+                                    if kcentphase!=None:
+                                        print("center kappa modulated independent of suppression phase")
+                                        moddict.update({"kcentphase":kcentphase})
+                                    print("fit params work for each of the surround for given rms threshold")
+                                    params.append(moddict)
 
-                                if KsurInt==None:
-                                    print("moddepbel=%s,moddepup=%s,kbel=%s,kup=%s,ksur=%s,phase=%s,ksurphase=%s"%(depb,depu,kb,ku,ksi[i],phase,phase+ksurphase))#The model parameters
-                                    dif,dec=data_dist(kc,ksi[i],maxInh,stdInt=[ku,kb],depInt=[depb,depu],fitThres=fit,errType=errType,phase=phase,deco=deco,dicti=dicti,se=se,errN=errN,bwType=bwType,ksurphase=ksurphase)#fit value and decoder list
-                                    if len(dec)==8:
-                                        print("fit params work for each of the surround for given rms threshold")
-                                        decoders.append(dec)#only when the model gives a good fit for all of the surround, outputs of the data_dist are appended.
-                                        params.append({"depb":depb,"depu":depu,"kb":kb,"ku":ku,"ksi":ksi[i],"phase":phase,"ksurphase":phase+ksurphase,"dif":dif})
-
-                                if KsurInt!=None:
-                                    print("surround kappa modulated")
-                                    for q in range(0,100):
-                                        sku=-KsurStep*q+KsurInt[0]#surround kappa upper value
-                                        for c in range(0,100):
-                                            skb=KsurStep*c+KsurInt[1]#surround kappa upper value
-                                            if skb>=sku:
-                                                break
-                                            print("moddepbel=%s,moddepup=%s,kbel=%s,kup=%s,ksurbel=%s,ksurup=%s,phase=%s,ksurphase=%s"%(depb,depu,kb,ku,skb,sku,phase,phase+ksurphase))#The model parameters
-                                            dif,dec=data_dist(kc,ksi[i],maxInh,stdInt=[ku,kb],depInt=[depb,depu],fitThres=fit,errType=errType,phase=phase,deco=deco,dicti=dicti,se=se,errN=errN,bwType=bwType,KsurInt=KsurInt)#fit value and decoder list
-                                            
-                                            if len(dec)==8:
-                                                print("fit params work for each of the surround for given rms threshold")
-                                                decoders.append(dec)#only when the model gives a good fit for all of the surround, outputs of the data_dist are appended.
-                                                params.append({"depb":depb,"depu":depu,"kb":kb,"ku":ku,"ksb":skb,"ksu":sku,"phase":phase,"ksurphase":phase+ksurphase,"dif":dif})
-        return decoders,params
+        return params
     
     else:
         stdInt=None;depInt=None;phase=None
-        decoders=[]
         params=[]
         for i in range(0,len(ksi)):#From here on, each parameter is scanned as a nested loop, so each parameter combination can be considered
             for m in range(0,len(kci)):
@@ -352,16 +343,15 @@ def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",de
                     dif,dec=data_dist(kci[m],ksi[i],depval[j],stdInt=stdInt,depInt=depInt,fitThres=fit,errType=errType,phase=phase,deco=deco,dicti=dicti,se=se,errN=errN,bwType=bwType)#fit value and decoder list
                     if len(dec)==8:
                         print("fit params work for each of the surround for given rms threshold")
-                        decoders.append(dec)#only when the model gives a good fit for all of the surround, outputs of the data_dist are appended.
                         params.append({"kci":kci[m],"ksi":ksi[i],"depval":depval[j],"dif":dif})
-        return decoders,params
+        return params
         
 """
 The parameter scan
 """    
 phInt=np.linspace(0,157.5,8)#phase of depmod and stdInt (center units) can be scanned as well if wished.    
 fit=10;errType="rms";date=date.today();decod="vecsum"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
-decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
 #The line 255 is for the scan, change values here for changing the scan attributes.
 """
 Save the filtered model values after parameter scan with pickle if the folders are absent.
@@ -412,13 +402,13 @@ Scan for each individual now instead of the average observer
 dicts=["dictHN","dictLH","dictMH","dictSU","dictTW"]
 fit=10;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
 for i in dicts:#change to dicts if you wanna redo the 1st scan
-    decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,dicti=i)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+    paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,dicti=i)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
     f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,i), 'wb')
     pickle.dump(paraml, f)
 
 decod="vecsum"
 for i in dicts:#change to dicts if you wanna redo the 1st scan
-    decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,dicti=i)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+    paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,dicti=i)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
     f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,i), 'wb')
     pickle.dump(paraml, f)
 
@@ -426,11 +416,11 @@ for i in dicts:#change to dicts if you wanna redo the 1st scan
 Scan the average observer without the se normalization
 """
 fit=15;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
-decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,se=False)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,se=False)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
 f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,"nose"), 'wb')
 pickle.dump(paraml, f)
 decod="vecsum"
-decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,se=False)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,se=False)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
 f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,"nose"), 'wb')
 pickle.dump(paraml, f)
 
@@ -440,13 +430,13 @@ Scan the average observer se normalization with phase=30°
 #phInt=np.linspace(0,157.5,8)#phase of depmod and stdInt (center units) can be scanned as well if wished.    
 fit=10;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
 ksi=np.linspace(1.0,2.3,14);kbs=0.7 ;kus=2 ;depbs=0.2 ;depus=0.8 ;kstep=0.2 ;depstep=0.2 ;phInt=[45]
-decl,paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
 f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s°.pckl'%(fit,decod,errType,date,phInt), 'wb')
 pickle.dump(paraml, f)
 
 decod="vecsum"
 
-decl,paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=[30],deco=decod)
+paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=[30],deco=decod)
 f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s°.pckl'%(fit,decod,errType,date,phInt), 'wb')
 pickle.dump(paraml, f)
 
@@ -455,13 +445,13 @@ Scan the phase as well (preliminary, make the steps shorter to see whats up)
 """
 fit=7;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
 ksi=np.linspace(1.0,2.3,14);kbs=0.7 ;kus=2 ;depbs=0.2 ;depus=0.8 ;kstep=0.2 ;depstep=0.2 ;phInt=np.linspace(0,157.5,8)
-decl,paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
 f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s°.pckl'%(fit,decod,errType,date,phInt), 'wb')
 pickle.dump(paraml, f)
 
 decod="vecsum"
 
-decl,paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod)
+paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod)
 f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s°.pckl'%(fit,decod,errType,date,phInt), 'wb')
 pickle.dump(paraml, f)
 
@@ -469,14 +459,14 @@ pickle.dump(paraml, f)
 Popvec decoder scan without error correction, expected is worsened data fit. fingers crossed :) Not quite as error correction not always dampens the error
 """
 fit=10;errType="rms";date=date.today();decod="vecsum"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
-decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
 f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s.pckl'%(fit,decod,errType,date,"nocorr"), 'wb')#no decoder correction
 pickle.dump(paraml, f)
 
 """
 Popvec decoder scan without error correction, but model maximum activity normalized so vecsum error is dampened
 """
-decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,bwType="gradient/max")#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,bwType="gradient/max")#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
 f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s_maxnorm.pckl'%(fit,decod,errType,date,"nocorr"), 'wb')#no decoder correction
 pickle.dump(paraml, f)
 
@@ -485,13 +475,13 @@ Uniform model scan for both decoder types, should be pretty fast as only 3 param
 """
 fit=10;errType="rms";date=date.today();decod="ml";bwType="regular"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
 ksi=np.linspace(1.0,2.3,14);kci=np.linspace(0.5,2.5,11);depval=np.linspace(0,1,6);kbs=None ;kus=None ;depbs=None ;depus=None ;kstep=None ;depstep=None ;phInt=None
-decl,paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod,kci=kci,depval=depval,bwType=bwType)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod,kci=kci,depval=depval,bwType=bwType)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
 f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_uni.pckl'%(fit,decod,errType,date), 'wb')#no decoder correction
 pickle.dump(paraml, f)
 
 
 decod="vecsum" #the scan is run for 14.02.2019
-decl,paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod,kci=kci,depval=depval,bwType=bwType)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod,kci=kci,depval=depval,bwType=bwType)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
 f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s_uni.pckl'%(fit,decod,errType,date,"nocorr"), 'wb')#no decoder correction
 pickle.dump(paraml, f)
 
@@ -500,12 +490,12 @@ Scan only with surround modulation
 """
 phInt=np.linspace(0,157.5,8)#phase of depmod and stdInt (center units) can be scanned as well if wished.    
 fit=10;errType="rms";date=date.today();decod="vecsum"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
-decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,ckapun=True)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,ckapun=True)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
 f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_nocorr_unicent.pckl'%(fit,decod,errType,date), 'wb')#no decoder correction
 pickle.dump(paraml, f)
 
 decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
-decl,paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,ckapun=True)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,ckapun=True)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
 f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_unicent.pckl'%(fit,decod,errType,date), 'wb')#no decoder correction
 pickle.dump(paraml, f)
 
@@ -513,11 +503,25 @@ pickle.dump(paraml, f)
 Do surround kappa modulated scan on ml, then see if something better is up, and do the same for popvec if yea
 """
 fit=7;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
-decl,paraml=scan_params(fit,np.linspace(0.1,2.3,12),0.8,2,0.2,0.6,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,KsurInt=[2.5,0.5],KsurStep=0.2,ksurphase=90)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+paraml=scan_params(fit,np.linspace(0.1,2.3,12),0.8,2,0.2,0.6,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,KsurInt=[2.5,0.5],KsurStep=0.2,ksurphase=112.5)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
 f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_surkap_modulated.pckl'%(fit,decod,errType,date), 'wb')#no decoder correction
 pickle.dump(paraml, f)
 
+"""
+Scan where kapa surround and suppression strength phases are same but center kappa phase differs.
+sur phase 22.5 cent phase orthogonal and other way around
+"""
+fit=7;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
+ksurphase=22.5;kcentphase=112.5
+paraml=scan_params(fit,np.linspace(0.1,2.3,12),0.8,2,0.2,0.6,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,KsurInt=[2.5,0.5],KsurStep=0.2,ksurphase=ksurphase,kcentphase=kcentphase)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_ksurphase=%s_kcentphase=%s_%s_.pckl'%(fit,decod,errType,ksurphase,kcentphase,date),'wb')#no decoder correction
+pickle.dump(paraml, f)
 
+fit=7;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
+ksurphase=112.5;kcentphase=22.5
+paraml=scan_params(fit,np.linspace(0.1,2.3,12),0.8,2,0.2,0.6,0.2,0.2,errType=errType,phInt=[112.5],deco=decod,errN=False,KsurInt=[2.5,0.5],KsurStep=0.2,ksurphase=ksurphase,kcentphase=kcentphase)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_ksurphase=%s_kcentphase=%s_%s_.pckl'%(fit,decod,errType,ksurphase,kcentphase,date),'wb')#no decoder correction
+pickle.dump(paraml, f)
 
 def auto_scan(thr,ksistep,kstep,depstep,param):
     """Parameter scanner for the next iteration:
@@ -570,6 +574,10 @@ def auto_scan(thr,ksistep,kstep,depstep,param):
     """
     decl2,paraml2=scan_params(thr,np.linspace(ksib,ksiu,ksistep),kbt,kut,depbt,deput,kstep,depstep)
     return decl2,paraml2
+
+"""
+TW 20.03.20 14.00 skype
+"""
 
 
 """

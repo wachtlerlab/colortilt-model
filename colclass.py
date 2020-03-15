@@ -35,7 +35,7 @@ class colmod:#add here the kappa phase variable.
         TO ADD: THE SURROUND MODULATION KAPPA PHASE DEPENDENCE!
     """
     x=np.ndarray.round(np.linspace(-60,420,num=4801),2)#round all these steps to .1 decimals
-    def __init__(self,Kcent,Ksur,maxInhRate,stdInt=[60,70],bwType="regular",phase=0,avgSur=180,startAvg=1,endAvg=360,depInt=[0.2,0.6],depmod=False,stdtransform=True,KsurInt=None,ksurphase=0,kcentphase=None):
+    def __init__(self,Kcent,Ksur,maxInhRate,stdInt=[60,70],bwType="regular",phase=0,avgSur=180,startAvg=1,endAvg=360,depInt=[0.2,0.6],depmod=False,stdtransform=True,KsurInt=None,ksurphase=None,kcentphase=None):
         """Parameters
         -------------
         Kcent: float. The concentration parameter Kappa of the center unit tuning curves. This parameter is of relevance only for the uniform model.
@@ -49,7 +49,8 @@ class colmod:#add here the kappa phase variable.
         model the input is "gradient/max", for the non-uniform model total unit activity normalized is "gradient/sum"
         phase: float, optional. The angular phase of the non-uniformity in the model in degrees. Set to 0° by default but in the study the phase 22.5° was used. 
         When for example phase 0° is, the unit with the preferred hue angle of 0° and 180° have the narrowest tuning and the surround suppression is the strongest for
-        the surround hue angle=0° and 180, beacuse the phase is periodic within 180°.
+        the surround hue angle=0° and 180, beacuse the phase is periodic within 180°. If other phase variables are denoted, this variable is only responsible for the phase
+        of the surround suppression (depmod=True).
         avgSur: float, optional. The hue angle of the surround stimulus. Set to 180° by default.
         startAvg: integer, optional. The smallest preferred hue angle of the center unit population. Set to 1° as default.
         endAvg: integer, optional. The biggest preferred hue angle of the center unit population. Set to 360° as default.
@@ -61,7 +62,7 @@ class colmod:#add here the kappa phase variable.
         KsurInt: list, optional. If a list value is given, then surround kappa is also phase modulated, meaning Ksur is irrelevant. Default is None. Give as [ku,kb]
         ksurphase: integer, optional. Default is 0. If a number is specified, the phase of surround modulation kappa  is changed by the given value in degrees.
         kcentphase: integer, optional. Default is None. If a number is specified, the phase of center unit kappa is changed by the given value in degrees. If the value
-        is None (as in default), then the center unit phase modulation is via the variable phase.
+        is None (as in default), then the center unit phase modulation is via the variable "phase" (see above).
     
         Returns
         -------
