@@ -68,7 +68,8 @@ mlParamsskm2,mlRmsskm2,mlfltskm2,mlindskm2,mloutskm2=file_opener("paraml_fit_7_d
 
 mlParamsskm3,mlRmsskm3,mlfltskm3,mlindskm3,mloutskm3=file_opener("paraml_fit_7_decoder_ml_errType_rms_2020-03-01_surkap_modulated",4)#surround kappa modulated scan
 
-    
+mlParamsskm,mlRmsskm,mlfltskm,mlindskm,mloutskm=file_opener("paraml_fit_7_decoder_ml_errType_rms_2020-02-22_surkap_modulated",4)#surround kappa modulated scan
+  
 plt.figure()
 plt.hist(mlRms,bins=100,color="black")#min mean val is 3.74, taking mean rms=4 as threshold to look at parameter properties    
 plt.title("RMS histogram of models with different parameters maximum likelhood decoder",fontsize=20)
@@ -1163,6 +1164,10 @@ mlparamNun=len(mlParams[0])-1
 mlparamUn=len(mlParamsuni[0])-1
 mlparamCun=len(mlParamscuni[0])-1
 
+
+"""
+AIK values
+"""
 nullaik=np.sum(nullchi)+1*4-2*df
 mlnunAik=np.sum(mlchinun)+mlparamNun*(mlparamNun+1)-2*df
 mlunAik=np.sum(mlchiun)+mlparamUn*(mlparamUn+1)-2*df

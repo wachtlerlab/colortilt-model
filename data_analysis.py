@@ -276,6 +276,7 @@ def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",de
         -------
         params: list. The list of dictionaries including parameters of the models giving good model fits.
     """
+    scannum=0#number of scans done in the end
     print("decoder=%s for the dictionary %s"%(deco,dicti))
     dicti=eval(dicti)
     if bwType!="regular":
@@ -316,21 +317,35 @@ def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",de
                                 depb=depstep*n+depbs
                                 if depb>=depu:#To ensure the lower limit does not exceed the upper limit
                                     b=0
-                                    break                                
-                                print("moddepbel=%s,moddepup=%s,kbel=%s,kup=%s,ksur=%s,phase=%s,ksurphase=%s,kcentphase=%s"%(depb,depu,kb,ku,ksi[i],phase,ksurphase,kcentphase))#The model parameters
-                                dif,modfit=data_dist(kc,ksi[i],maxInh,stdInt=[ku,kb],depInt=[depb,depu],fitThres=fit,errType=errType,phase=phase,deco=deco,dicti=dicti,se=se,errN=errN,bwType=bwType,KsurInt=KsurInt,ksurphase=ksurphase,kcentphase=kcentphase)#fit value
-                                if modfit==True:
-                                    moddict={}
-                                    moddict.update({"depb":depb,"depu":depu,"kb":kb,"ku":ku,"ksi":ksi[i],"phase":phase,"dif":dif})
-                                    if KsurInt!=None:
+                                    break 
+                            
+                                if KsurInt!=None:
                                         print("surround kappa modulated")
-                                        moddict.update({"ksurphase":ksurphase})
-                                    if kcentphase!=None:
-                                        print("center kappa modulated independent of suppression phase")
-                                        moddict.update({"kcentphase":kcentphase})
-                                    print("fit params work for each of the surround for given rms threshold")
-                                    params.append(moddict)
-
+                                        for q in range(0,100):
+                                            sku=-KsurStep*q+KsurInt[0]#surround kappa upper value
+                                            for c in range(0,100):
+                                                skb=KsurStep*c+KsurInt[1]#surround kappa upper value
+                                                if skb>=sku:
+                                                    break
+                                                print("moddepbel=%s,moddepup=%s,kbel=%s,kup=%s,ksur=%s,phase=%s,ksb=%s,ksu=%s,ksurphase=%s,kcentphase=%s"%(depb,depu,kb,ku,ksi[i],phase,skb,sku,ksurphase,kcentphase))#The model parameters
+                                                dif,modfit=data_dist(kc,ksi[i],maxInh,stdInt=[ku,kb],depInt=[depb,depu],fitThres=fit,errType=errType,phase=phase,deco=deco,dicti=dicti,se=se,errN=errN,bwType=bwType,KsurInt=KsurInt,ksurphase=ksurphase,kcentphase=kcentphase)#fit value
+                                                if modfit==True:
+                                                    moddict={}
+                                                    moddict.update({"depb":depb,"depu":depu,"kb":kb,"ku":ku,"ksb":skb,"ksu":sku,"phase":phase,"ksurphase":ksurphase,"dif":dif})
+                                                    if kcentphase!=None:
+                                                        print("center kappa modulated independent of suppression phase")
+                                                        moddict.update({"kcentphase":kcentphase})
+                                                    print("fit params work for each of the surround for given rms threshold")
+                                                    params.append(moddict)
+                                                scannum=scannum+1
+                                else:
+                                    print("moddepbel=%s,moddepup=%s,kbel=%s,kup=%s,ksur=%s,phase=%s,ksurphase=%s,kcentphase=%s"%(depb,depu,kb,ku,ksi[i],phase,ksurphase,kcentphase))#The model parameters
+                                    dif,modfit=data_dist(kc,ksi[i],maxInh,stdInt=[ku,kb],depInt=[depb,depu],fitThres=fit,errType=errType,phase=phase,deco=deco,dicti=dicti,se=se,errN=errN,bwType=bwType,KsurInt=KsurInt,ksurphase=ksurphase,kcentphase=kcentphase)#fit value
+                                    if modfit==True:
+                                        moddict={}
+                                        moddict.update({"depb":depb,"depu":depu,"kb":kb,"ku":ku,"ksi":ksi[i],"phase":phase,"dif":dif})
+                                    scannum=scannum+1
+        print(scannum)
         return params
     
     else:
@@ -341,9 +356,11 @@ def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",de
                 for j in range(0,len(depval)):
                     print("ckappa=%s,skappa=%s,maxinh=%s"%(kci[m],ksi[i],depval[j]))#The model parameters
                     dif,dec=data_dist(kci[m],ksi[i],depval[j],stdInt=stdInt,depInt=depInt,fitThres=fit,errType=errType,phase=phase,deco=deco,dicti=dicti,se=se,errN=errN,bwType=bwType)#fit value and decoder list
-                    if len(dec)==8:
+                    if modfit==True:
                         print("fit params work for each of the surround for given rms threshold")
                         params.append({"kci":kci[m],"ksi":ksi[i],"depval":depval[j],"dif":dif})
+                    scannum=scannum+1
+        print(scannum)
         return params
         
 """
@@ -499,11 +516,12 @@ paraml=scan_params(fit,np.linspace(0.1,2.3,10),0.5,2,0,1,0.2,0.2,errType=errType
 f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_unicent.pckl'%(fit,decod,errType,date), 'wb')#no decoder correction
 pickle.dump(paraml, f)
 
+
 """
 Do surround kappa modulated scan on ml, then see if something better is up, and do the same for popvec if yea
 """
 fit=7;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
-paraml=scan_params(fit,np.linspace(0.1,2.3,12),0.8,2,0.2,0.6,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,KsurInt=[2.5,0.5],KsurStep=0.2,ksurphase=112.5)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+paraml=scan_params(fit,np.linspace(0.1,2.3,12),0.8,2,0.2,0.6,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,KsurInt=[2.5,0.5],KsurStep=0.2,ksurphase=112.5,kcentphase=22.5)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
 f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_surkap_modulated.pckl'%(fit,decod,errType,date), 'wb')#no decoder correction
 pickle.dump(paraml, f)
 
@@ -514,13 +532,13 @@ sur phase 22.5 cent phase orthogonal and other way around
 fit=7;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
 ksurphase=22.5;kcentphase=112.5
 paraml=scan_params(fit,np.linspace(0.1,2.3,12),0.8,2,0.2,0.6,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,KsurInt=[2.5,0.5],KsurStep=0.2,ksurphase=ksurphase,kcentphase=kcentphase)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
-f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_ksurphase=%s_kcentphase=%s_%s_.pckl'%(fit,decod,errType,ksurphase,kcentphase,date),'wb')#no decoder correction
+f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_ksurphase=%s_kcentphase=%s_%s.pckl'%(fit,decod,errType,ksurphase,kcentphase,date),'wb')#no decoder correction
 pickle.dump(paraml, f)
 
 fit=7;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
 ksurphase=112.5;kcentphase=22.5
 paraml=scan_params(fit,np.linspace(0.1,2.3,12),0.8,2,0.2,0.6,0.2,0.2,errType=errType,phInt=[112.5],deco=decod,errN=False,KsurInt=[2.5,0.5],KsurStep=0.2,ksurphase=ksurphase,kcentphase=kcentphase)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
-f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_ksurphase=%s_kcentphase=%s_%s_.pckl'%(fit,decod,errType,ksurphase,kcentphase,date),'wb')#no decoder correction
+f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_ksurphase=%s_kcentphase=%s_%s.pckl'%(fit,decod,errType,ksurphase,kcentphase,date),'wb')#no decoder correction
 pickle.dump(paraml, f)
 
 def auto_scan(thr,ksistep,kstep,depstep,param):
@@ -579,7 +597,15 @@ def auto_scan(thr,ksistep,kstep,depstep,param):
 TW 20.03.20 14.00 skype
 """
 
+"""
+test
+fit=1;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
+paraml=scan_params(fit,np.linspace(0.1,2.3,2),0.8,2,0.2,0.6,0.8,0.8,errType=errType,phInt=[22.5],deco=decod,errN=False,KsurInt=[2.5,0.5],KsurStep=0.8,ksurphase=112.5,kcentphase=22.5)
 
+phInt=np.linspace(0,157.5,8)#phase of depmod and stdInt (center units) can be scanned as well if wished.    
+fit=1;errType="rms";date=date.today();decod="vecsum"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
+paraml=scan_params(fit,np.linspace(0.1,2.3,2),0.5,2,0,1,0.8,0.8,errType=errType,phInt=[22.5],deco=decod)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+"""
 """
 *Development notes
 Run the scan only once, keep intervals same, threshold is 2, and for the values below threshold take also rms value into consideration,
