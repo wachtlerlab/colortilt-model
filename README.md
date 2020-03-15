@@ -5,3 +5,4 @@ The repository contains the Python scripts used for the modelling. The files in 
 
 # Directories
 There are three directory pathways used. First one is to save the figures, second is to save the parameter scan files and the last one is for importing different scripts and the data. The pathway can be changed in the colclass.py pathes class.
+Note that development script pathways still have to be changed manually.
