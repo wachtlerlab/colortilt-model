@@ -63,14 +63,15 @@ for i in range(0,360,45):
         
         
 """
-Get a mean value from all individuals for given surround and find the SE (mean of means/sqrt(number of means))
+Get a mean value from all individuals for given surround and find the SE (mean of means for each surround is the datapoint,
+std(means)/sqrt(number of means) is the SE of each datapoint per surround.)
 """
 for i in range(0,360,45):#loop for each surround stimulus angle condition.
     for k in range(0,16):#loop for each center hue angle measured in each surround.
         a=[list(dictTW[i][params[0]].values())[k],list(dictSU[i][params[0]].values())[k],list(dictMH[i][params[0]].values())[k],\
-           list(dictLH[i][params[0]].values())[k],list(dictHN[i][params[0]].values())[k]]#list of each subject angshi values for the given surround
-        dictTot[i][params[0]].update({-157.5+22.5*k:np.mean(a)})#update the dictTot angshi value with average, where key is the corresponding csd value.
-        dictTot[i][params[1]].update({-157.5+22.5*k:st.sem(a)})##update the dictTot se value, where key is the corresponding csd value.
+           list(dictLH[i][params[0]].values())[k],list(dictHN[i][params[0]].values())[k]]#list of each subject mean angshi values for the given surround
+        dictTot[i][params[0]].update({-157.5+22.5*k:np.mean(a)})#update the dictTot angshi value with average, where key is the corresponding csd value (mean of means).
+        dictTot[i][params[1]].update({-157.5+22.5*k:st.sem(a)})##update the dictTot se value, where key is the corresponding csd value (se of means).
 
 #plt.plot(dictTot[45]["angshi"].keys(),dictTot[45]["angshi"].values(),color="black")
 plt.errorbar(dictTot[0]["angshi"].keys(),dictTot[0]["angshi"].values(),dictTot[0]["se"].values(),ecolor="red",color="black",capsize=3)#exemplary plot of the data.
@@ -518,7 +519,7 @@ pickle.dump(paraml, f)
 
 
 """
-Do surround kappa modulated scan on ml, then see if something better is up, and do the same for popvec if yea
+Do surround kappa modulated scan on ml, then see if something better is up, and do the same for popvec if yea, nothing got better
 """
 fit=7;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
 paraml=scan_params(fit,np.linspace(0.1,2.3,12),0.8,2,0.2,0.6,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,KsurInt=[2.5,0.5],KsurStep=0.2,ksurphase=112.5,kcentphase=22.5)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
@@ -527,19 +528,29 @@ pickle.dump(paraml, f)
 
 """
 Scan where kapa surround and suppression strength phases are same but center kappa phase differs.
-sur phase 22.5 cent phase orthogonal and other way around
+sur phase 22.5 cent phase orthogonal and other way around results no better fit
 """
-fit=7;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
+fit=10;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
 ksurphase=22.5;kcentphase=112.5
 paraml=scan_params(fit,np.linspace(0.1,2.3,12),0.8,2,0.2,0.6,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,errN=False,KsurInt=[2.5,0.5],KsurStep=0.2,ksurphase=ksurphase,kcentphase=kcentphase)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
 f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_ksurphase=%s_kcentphase=%s_%s.pckl'%(fit,decod,errType,ksurphase,kcentphase,date),'wb')#no decoder correction
 pickle.dump(paraml, f)
 
-fit=7;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
+fit=10;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
 ksurphase=112.5;kcentphase=22.5
 paraml=scan_params(fit,np.linspace(0.1,2.3,12),0.8,2,0.2,0.6,0.2,0.2,errType=errType,phInt=[112.5],deco=decod,errN=False,KsurInt=[2.5,0.5],KsurStep=0.2,ksurphase=ksurphase,kcentphase=kcentphase)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
 f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_ksurphase=%s_kcentphase=%s_%s.pckl'%(fit,decod,errType,ksurphase,kcentphase,date),'wb')#no decoder correction
 pickle.dump(paraml, f)
+
+
+"""
+Suppression phase 22.5, center unit phase 112.5, no surround kappa modulation
+"""
+fit=8;errType="rms";date=date.today();decod="ml"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
+paraml=scan_params(fit,np.linspace(0.1,2.5,13),0.5,2.5,0,1,0.2,0.2,errType=errType,phInt=[22.5],deco=decod,kcentphase=112.5)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
+f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_phase=%s_kcentphase=%s_%s.pckl'%(fit,decod,errType,22.5,112.5,date),'wb')#no decoder correction
+pickle.dump(paraml, f)
+
 
 def auto_scan(thr,ksistep,kstep,depstep,param):
     """Parameter scanner for the next iteration:

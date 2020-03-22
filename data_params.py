@@ -23,6 +23,7 @@ from matplotlib.ticker import MultipleLocator, FormatStrFormatter, AutoMinorLoca
 from mpl_toolkits.mplot3d import Axes3D
 path=col.pathes.figpath
 from datetime import date
+from scipy.stats import chi2 as chisq
 
 dictTot=pickle.load(open("dicttot.pckl","rb"))#Dictionary of the subject average.
 date=date.today()
@@ -40,21 +41,6 @@ def file_opener(dataName,rmsThres):
     fltrms, fltind=zip(*sorted(zip(fltrms,fltind)))#sort fltind and fltrms values in the same ascending order 
     return paraml, meanrms, fltrms, fltind, outind
 
-"""
-The null model, which predicts the average for each surround condition: Find the RMS per surround condition to estimate how well the models explain the variability.
-Here, chi square will be done, where each data value is weighted by the se.
-"""
-avgvals=[]#average hue shift value per surround, spanning from 0 to 315 degrees. These values are null model estimation
-for i in list(dictTot.keys()):
-    meanval=np.mean(np.array(list(dictTot[i]["angshi"].values())))
-    avgvals.append(meanval)
-#RMS calculation:
-nullRMS=[]
-for i in list(dictTot.keys()):
-    angshi=np.array(list(dictTot[i]["angshi"].values()))
-    sterr=np.array(list(dictTot[i]["se"].values()))
-    RMS=np.sqrt(np.mean((((avgvals[list(dictTot.keys()).index(i)]-angshi)/sterr)**2))) ##Formula: sqrt(mean(((model-data)/SE_data)^2))
-    nullRMS.append(RMS)
 
 """
 Histogram of the parameter distribution. FIGURE 6
@@ -63,13 +49,14 @@ popVecParams,popVecRms,popvecflt,popvecind,popvecout=file_opener("paraml_fit_10_
 mlParams,mlRms,mlflt,mlind,mlout=file_opener("paraml_fit_10_decoder_ml_errType_rms_2019-08-23",4)
 popVecParamsmf,popVecRmsmf,popvecfltmf,popvecindmf,popvecoutmf=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-01-25_nocorr_maxnorm",4.5)
 
-mlParamsskm,mlRmsskm,mlfltskm,mlindskm,mloutskm=file_opener("paraml_fit_7_decoder_ml_errType_rms_2020-02-22_surkap_modulated",4)#surround kappa modulated scan
+mlParamsskm,mlRmsskm,mlfltskm,mlindskm,mloutskm=file_opener("paraml_fit_7_decoder_ml_errType_rms_2020-02-22_surkap_modulated_ksurphase_112.5",4)#surround kappa modulated scan
 mlParamsskm2,mlRmsskm2,mlfltskm2,mlindskm2,mloutskm2=file_opener("paraml_fit_7_decoder_ml_errType_rms_2020-02-20_surkap_modulated",4)#surround kappa modulated scan
 
-mlParamsskm3,mlRmsskm3,mlfltskm3,mlindskm3,mloutskm3=file_opener("paraml_fit_7_decoder_ml_errType_rms_2020-03-01_surkap_modulated",4)#surround kappa modulated scan
+mlParamsskm3,mlRmsskm3,mlfltskm3,mlindskm3,mloutskm3=file_opener("paraml_fit_10_decoder_ml_errType_rms_ksurphase=22.5_kcentphase=112.5_2020-03-17",5)#not worked out well
+mlParamsskm4,mlRmsskm4,mlfltskm4,mlindskm4,mloutskm4=file_opener("paraml_fit_10_decoder_ml_errType_rms_ksurphase=112.5_kcentphase=22.5_2020-03-18",5)#not worked out well
 
-mlParamsskm,mlRmsskm,mlfltskm,mlindskm,mloutskm=file_opener("paraml_fit_7_decoder_ml_errType_rms_2020-02-22_surkap_modulated",4)#surround kappa modulated scan
-  
+mlParamsskm5,mlRmsskm5,mlfltskm5,mlindskm5,mloutskm5=file_opener("paraml_fit_10_decoder_ml_errType_rms_ksurphase=112.5_kcentphase=22.5_2020-03-18",5)#not worked out well
+
 plt.figure()
 plt.hist(mlRms,bins=100,color="black")#min mean val is 3.74, taking mean rms=4 as threshold to look at parameter properties    
 plt.title("RMS histogram of models with different parameters maximum likelhood decoder",fontsize=20)
@@ -1120,13 +1107,82 @@ plt.pause(0.1)
 plt.subplots_adjust(left=0.04, bottom=0.05, right=0.99, top=0.93, wspace=0.11, hspace=0.28)
 
 
-"""
-Explained variability by the models, based on the RMS reduction based on the null model estimate
-Index: (nullRMS-modelRMS)/2
-USE AIC: AIC=χ2 + k(k + 1) - 2df k is the parameter number, df is degrees of freedom
-"""
 
 
+"""
+THE FIT INDICES APART FROM RMSEA
+#TODO: Rearrange all the code (null model stuff etc.), mostly done
+"""
+"""
+*REDIDUAL variance:
+*Chi square of the model error: TODO: Revise, DONE, now it is correct formula that it uses standart deviation not standard error
+*Chi square between models (nested): TODO: implement p.58 method from Chapter 4 Estimation and Testing of Computational
+                                    Psychological Models, Jerome R. Busemeyer and Adele Diederich
+                                    chi=chi(simple model)-chi(complex model), df is k(complex)-k(simple)
+                                    Done but ask TW as p values are irrealistically low (10^-20 ish)
+!QUESTION ON NULL MODEL: use the average hue shift per surround or the total average hue shift over all surrounds?
+                         if average hue shift per surround is used, then is the number of parameters for the null model
+                         8 (i.e. number of surround conditions)?
+*AIC between unnested models (Null and Rest): AIC_model=chi_sq(model error)+2k (k:# of parameters) TODO: implement done,
+                                                TODO: maybe convert to proportions relative to null model (ask TW)
+*BIC             -''-                       : BIC_model=sqrt(chi_sq(model error))+ln(T)*k (T:# of observations) TODO: implement done with a plot twist (ask TW)
+*BIC for nested models: (chi_sq(simple model error)-chi_sq(complex model error))-ln(T)*(k(complex)-k(simple)) TODO: implement done
+*R square: R^2= 1-(SSE/TSS) , SSE is unweighted sum of square errors for all conditions ((dec-dat)**2)
+and TSS is the sum of squared deviations around the mean of the observed data (averaged across conditions), corresponding to null model
+"""
+
+"""
+Firstly redefine all models so it is simpler to run the code
+"""
+"""
+popvec 
+"""
+popVecParams,popVecRms,popvecflt,popvecind,popvecout=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-01-25_nocorr",4.5)
+popVecParamsmf,popVecRmsmf,popvecfltmf,popvecindmf,popvecoutmf=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-01-25_nocorr_maxnorm",4.5)
+popVecParamsuni,popVecRmsuni,popvecfltuni,popvecinduni,popvecoutuni=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-02-14_nocorr_uni",4.5)
+popVecParamscuni,popVecRmscuni,popvecfltcuni,popvecindcuni,popvecoutcuni=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-02-14_nocorr_unicent",4.5)
+
+"""
+ml
+"""
+mlParams,mlRms,mlflt,mlind,mlout=file_opener("paraml_fit_10_decoder_ml_errType_rms_2019-08-23",4)
+mlParamsuni,mlRmsuni,mlfltuni,mlinduni,mloutuni=file_opener("paraml_fit_10_decoder_ml_errType_rms_2020-02-14_uni",4.5)
+mlParamscuni,mlRmscuni,mlfltcuni,mlindcuni,mloutcuni=file_opener("paraml_fit_10_decoder_ml_errType_rms_2020-02-15_unicent",4.5)
+
+"""
+ml surkap modulated
+"""
+mlParamsskm,mlRmsskm,mlfltskm,mlindskm,mloutskm=file_opener("paraml_fit_7_decoder_ml_errType_rms_2020-02-22_surkap_modulated_ksurphase_112.5",4)#surround kappa modulated scan
+mlParamsskm2,mlRmsskm2,mlfltskm2,mlindskm2,mloutskm2=file_opener("paraml_fit_7_decoder_ml_errType_rms_2020-02-20_surkap_modulated",4)#surround kappa modulated scan
+mlParamsskm3,mlRmsskm3,mlfltskm3,mlindskm3,mloutskm3=file_opener("paraml_fit_10_decoder_ml_errType_rms_ksurphase=22.5_kcentphase=112.5_2020-03-17",5)#not worked out well
+mlParamsskm4,mlRmsskm4,mlfltskm4,mlindskm4,mloutskm4=file_opener("paraml_fit_10_decoder_ml_errType_rms_ksurphase=112.5_kcentphase=22.5_2020-03-18",5)#not worked out well
+mlParamsskm5,mlRmsskm5,mlfltskm5,mlindskm5,mloutskm5=file_opener("paraml_fit_10_decoder_ml_errType_rms_ksurphase=112.5_kcentphase=22.5_2020-03-18",5)#not worked out well
+
+
+
+"""
+The null model, which predicts the average for each surround condition: Find the RMS per surround condition to estimate how well the models explain the variability.
+Here, chi square will be done, where each data value is weighted by the se.
+"""
+avgvals=[]#average hue shift value per surround, spanning from 0 to 315 degrees. These values are null model estimation
+for i in list(dictTot.keys()):
+    meanval=np.mean(np.array(list(dictTot[i]["angshi"].values())))
+    avgvals.append(meanval)
+
+"""
+!!!RMS is based on standard error! TO get back to variance, first compute standard deviation (SE*sqrt(n))
+Here n=5 (5 participants, SE was calculated for each surround as sd(list(mean(observer)))/sqrt(# of each observer))
+"""
+
+#RMS calculation:
+nullRMS=[]#RMS per each surround
+for i in list(dictTot.keys()):
+    angshi=np.array(list(dictTot[i]["angshi"].values()))
+    sterr=np.array(list(dictTot[i]["se"].values()))
+    RMS=np.sqrt(np.mean((((avgvals[list(dictTot.keys()).index(i)]-angshi)/sterr)**2))) ##Formula: sqrt(mean(((model-data)/SE_data)^2))
+    nullRMS.append(RMS)
+
+#!!!CAUTION: The average observer data is normalized by its standard error, but this new normalized data also requires its variance for the further computation.
 
 def chi_sq_calc(dec,data):#dec is the best model angshift predictions, data is the data dictionary for a given surround
     return np.sum((dec-np.array(list(data["angshi"].values())))**2/(np.array(list(data["se"].values())))**2)
@@ -1152,32 +1208,103 @@ for i in dictTot.keys():
     dec=col.decoder.ml(mod.x,mod.centery,mod.resulty,mod.unitTracker,avgSur=i,dataFit=True)
     mlchi.append(chi_sq_calc(dec.angShift,dictTot[i]))
 """
-nullchi=np.array(nullRMS)**2*16
+nullchi=np.array(nullRMS)**2*16/5#chi square per each surround: sum(((dec-dat)/std(dat))**2) where dec and dat are hue shifts per surround (n=16)
 
-mlchinun=np.array(list(mlParams[mlind[0]]["dif"].values()))**2*16
-mlchiun=np.array(list(mlParamsuni[mlinduni[0]]["dif"].values()))**2*16
-mlchicun=np.array(list(mlParamscuni[mlindcuni[0]]["dif"].values()))**2*16
-    
-df=len(dictTot)*len(dictTot[0]["se"])
+"""
+RMS**2/16 gives sum(((dec-dat)/SE)**2) and to come to std from SE (as in chi square=sum(((dec-dat)/std)**2)) SE has to be 
+multiplied by sqrt(N) (number of participants, N=5), whereas all is squared and n is constant so it can be taken all the 
+way out of the sum, i.e. RMS=sqrt(1/16*sum(((dec-dat)/s)**2*5)) 
+(where 16 is number of avg. observer datapoints per surround and 5 is number of observers)
+"""                                
 
-mlparamNun=len(mlParams[0])-1
+"""
+Model error chi square with descending complexity (df inbetween for each is 1)
+"""
+mlchiun=np.array(list(mlParamsuni[mlinduni[0]]["dif"].values()))**2*16/5
+mlchicun=np.array(list(mlParamscuni[mlindcuni[0]]["dif"].values()))**2*16/5
+mlchinun=np.array(list(mlParams[mlind[0]]["dif"].values()))**2*16/5
+
+"""
+# of variables for each model
+"""
 mlparamUn=len(mlParamsuni[0])-1
-mlparamCun=len(mlParamscuni[0])-1
+mlparamCun=len(mlParamscuni[0])-2#as kb=ku
+mlparamNun=len(mlParams[0])-1
+
+"""
+chi square test between models
+"""
+chiuncun=np.sum(mlchiun-mlchicun)#chi test between uniform and center only uniform
+dfuncun=mlparamCun-mlparamUn
+puncun=1-chisq.cdf(chiuncun,dfuncun)#says zero, so significant
+
+chicunnun=np.sum(mlchicun-mlchinun)#chi test between center only uniform and non-uniform  
+dfcunnun=mlparamNun-mlparamCun
+punnun=1-chisq.cdf(chicunnun,dfcunnun)#says zero, so significant
+#chi=chi(simple model)-chi(complex model), df is k(complex)-k(simple)
+
+"""
+AIC of the models (to compare with null model as they are not nested)
+"""
+nullaic=np.sum(nullchi)+2
+mlunaic=np.sum(mlchiun)+2*mlparamUn
+mlcunaic=np.sum(mlchicun)+2*mlparamCun
+mlnunaic=np.sum(mlchinun)+2*mlparamNun
+#AIC_model=chi_sq(model error)+2k (k:# of parameters)
 
 
 """
-AIK values
+BIC of the models (to compare with null model as they are not nested)
 """
+obsnum=len(dictTot.keys())*len(dictTot[0]["angshi"].keys())#number of observations over all surrounds
+nullbic=np.sqrt(np.sum(nullchi))+np.log(obsnum)*1
+mlunbic=np.sqrt(np.sum(mlchiun))+np.log(obsnum)*mlparamUn
+mlcunbic=np.sqrt(np.sum(mlchicun))+np.log(obsnum)*mlparamCun
+mlnunbic=np.sqrt(np.sum(mlchinun))+np.log(obsnum)*mlparamNun
+#Values not as expected and not fitting to AIC outcome
+#BIC_model=sqrt(chi_sq(model error))+ln(T)*k (T:# of observations)
+
+"""
+BIC for nested models
+"""
+bicuncun=np.sum(mlchiun)-np.sum(mlchicun)-np.log(obsnum)*(mlparamCun-mlparamUn)
+biccunnun=np.sum(mlchicun)-np.sum(mlchinun)-np.log(obsnum)*(mlparamNun-mlparamCun)
+bicunnun=np.sum(mlchiun)-np.sum(mlchinun)-np.log(obsnum)*(mlparamNun-mlparamUn)
+#values as expected
+#nestedbic=(chi_sq(simple model error)-chi_sq(complex model error))-ln(T)*(k(complex)-k(simple))
+
+"""
+R square
+"""
+def sse_calc(dec,data):#dec is the best model angshift predictions, data is the data dictionary for a given surround
+    return np.sum((dec-np.array(list(data["angshi"].values())))**2)
+
+#*R^2= 1-(SSE/TSS) , SSE is unweighted sum of square errors for all conditions ((dec-dat)**2)
+#and TSS is the sum of squared deviations around the mean of the observed data (averaged across conditions), corresponding to null model
+
+"""
+AIK values (david a kenny)
+"""
+df=len(dictTot)*len(dictTot[0]["se"])
 nullaik=np.sum(nullchi)+1*4-2*df
 mlnunAik=np.sum(mlchinun)+mlparamNun*(mlparamNun+1)-2*df
 mlunAik=np.sum(mlchiun)+mlparamUn*(mlparamUn+1)-2*df
 mlcunAik=np.sum(mlchicun)+mlparamUn*(mlparamCun+1)-2*df
 
+"""
+BIC (david a kenny)
+chi+ln(N)*((k*(k+1))/2-df) k(k + 3)/2 if mean in model.
+"""
+nullbik=np.sum(nullchi)+np.log(obsnum)*((1*4)/2-df)
+mlnunbik=np.sum(mlchinun)+np.log(obsnum)*((mlparamNun*(mlparamNun+1))/2-(df-mlparamNun))
+mlunbik=np.sum(mlchinun)+np.log(obsnum)*((mlparamUn*(mlparamUn+1))/2-(df-mlparamUn))
+mlcunbik=np.sum(mlchinun)+np.log(obsnum)*((mlparamCun*(mlparamCun+1))/2-(df-mlparamCun))
+
+
 
     #16 measurements per surround condition, so multiply mean with 16
     #RMS Formula: sqrt(mean(((model-data)/SE_data)^2)), change it to sum((expected-observed)^2/variance)
         
-
 scanrms={"ml":mlbestRMS,"mluni":mlbestRMSuni,"mlcuni":mlbestRMScuni,"mlskm":mlbestRMSskm,"pv":pvbestRMS,"pvuni":pvbestRMSuni,"pvcuni":pvbestRMScuni}
 rmsind={}
 meanmodrms={}
