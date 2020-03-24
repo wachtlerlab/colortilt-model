@@ -35,7 +35,7 @@ class colmod:#add here the kappa phase variable.
         TO ADD: THE SURROUND MODULATION KAPPA PHASE DEPENDENCE!
     """
     x=np.ndarray.round(np.linspace(-60,420,num=4801),2)#round all these steps to .1 decimals
-    def __init__(self,Kcent,Ksur,maxInhRate,stdInt=[60,70],bwType="regular",phase=0,avgSur=180,startAvg=1,endAvg=360,depInt=[0.2,0.6],depmod=False,stdtransform=True,KsurInt=None,ksurphase=None,kcentphase=None):
+    def __init__(self,Kcent,Ksur,maxInhRate,stdInt=[60,70],bwType="regular",phase=0,avgSur=180,startAvg=1,endAvg=360,depInt=[0.2,0.6],depmod=False,stdtransform=True,KsurInt=[None],ksurphase=None,kcentphase=None):
         """Parameters
         -------------
         Kcent: float. The concentration parameter Kappa of the center unit tuning curves. This parameter is of relevance only for the uniform model.
@@ -129,13 +129,13 @@ class colmod:#add here the kappa phase variable.
             self.unitTracker=np.arange(startAvg,startAvg+len(self.totalAvg))
         
         
-        if KsurInt!=None:#this one is for kappa surround
+        if KsurInt[0]!=None:#this one is for kappa surround, look at the first entry of KsurInt if that is none
             ksurDown=KsurInt[0]#big kappa limit
             ksurUp=KsurInt[1]#small kappa limit
             kSurMod=(ksurDown-ksurUp)/2*np.cos(2*np.deg2rad(np.linspace(0,359.5,720)-(ksurphase)))+ksurUp+(ksurDown-ksurUp)/2#Kappa Modulator
             kapval=kSurMod[np.where(np.linspace(0,359.5,720)==avgSur)[0][0]]
             self.surroundy=1/(2*np.pi)*np.e**(kapval*np.cos(np.deg2rad(colmod.x)-np.deg2rad(avgSur)))#Surround modulation curve, von Mises distributed.
-        if KsurInt==None:
+        if KsurInt[0]==None:
             self.surroundy=1/(2*np.pi)*np.e**(Ksur*np.cos(np.deg2rad(colmod.x)-np.deg2rad(avgSur)))#Surround modulation curve, von Mises distributed.
         
         if depmod==False:#Surround suppression is the same for all surround stimulus conditions

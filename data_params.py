@@ -1158,8 +1158,27 @@ mlParamsskm3,mlRmsskm3,mlfltskm3,mlindskm3,mloutskm3=file_opener("paraml_fit_10_
 mlParamsskm4,mlRmsskm4,mlfltskm4,mlindskm4,mloutskm4=file_opener("paraml_fit_10_decoder_ml_errType_rms_ksurphase=112.5_kcentphase=22.5_2020-03-18",5)#not worked out well
 mlParamsskm5,mlRmsskm5,mlfltskm5,mlindskm5,mloutskm5=file_opener("paraml_fit_10_decoder_ml_errType_rms_ksurphase=112.5_kcentphase=22.5_2020-03-18",5)#not worked out well
 
-
-
+"""
+Best model parameter extractor function
+"""
+def param_extractor(moddict,indlist,**kwargs):#moddict is the dictionary list of the fit model having all models, indlist is the index list of the dictionary list,**kwargs other model parameters (see colmod)
+    """
+    Create a dictionary paramdict of wished model parameters
+    """
+    dicti=moddict[indlist[0]]
+    paramdict={"depb":None,"depu":None,"kb":None,"ku":None,"ksi":None,"phase":None,"kci":None,"depval":None,"ksb":None,"ksu":None,"ksurphase":None,"kcentphase":None}#Preallocate
+    for i in dicti.keys():
+        if i in paramdict.keys():
+            paramdict[i]=dicti[i]#works
+    """
+    Feed the parameters to the colmod
+    """
+    model=col.colmod(Kcent=paramdict["kci"],Ksur=paramdict["ksi"],maxInhRate=paramdict["depval"],stdInt=[paramdict["ku"],paramdict["kb"]],\
+                     phase=paramdict["phase"],depInt=[paramdict["depb"],paramdict["depu"]],KsurInt=[paramdict["ksu"],paramdict["ksb"]],\
+                     ksurphase=paramdict["ksurphase"],kcentphase=paramdict["kcentphase"],**kwargs)
+    return model #YOU NEED TO THINK WHAT THE MODEL IS, SUCH THAT YOU NEED TO SPECIFY THE KWARGS ACCORDINGLY (BWTYPE=, STDTRANSFORM= etc!)
+            
+#bwType gradient/sum, avgSur=i, depmod=True, stdtransform=False
 """
 The null model, which predicts the average for each surround condition: Find the RMS per surround condition to estimate how well the models explain the variability.
 Here, chi square will be done, where each data value is weighted by the se.
@@ -1168,6 +1187,11 @@ avgvals=[]#average hue shift value per surround, spanning from 0 to 315 degrees.
 for i in list(dictTot.keys()):
     meanval=np.mean(np.array(list(dictTot[i]["angshi"].values())))
     avgvals.append(meanval)
+
+"""
+Global mean of the data (used for R^2, can also be used for null model)
+"""
+gmean=np.mean(avgvals)
 
 """
 !!!RMS is based on standard error! TO get back to variance, first compute standard deviation (SE*sqrt(n))
@@ -1274,13 +1298,45 @@ bicunnun=np.sum(mlchiun)-np.sum(mlchinun)-np.log(obsnum)*(mlparamNun-mlparamUn)
 #nestedbic=(chi_sq(simple model error)-chi_sq(complex model error))-ln(T)*(k(complex)-k(simple))
 
 """
-R square
+R square (TSS uses GLOBAL MEAN of the datapoint!)
 """
 def sse_calc(dec,data):#dec is the best model angshift predictions, data is the data dictionary for a given surround
     return np.sum((dec-np.array(list(data["angshi"].values())))**2)
 
-#*R^2= 1-(SSE/TSS) , SSE is unweighted sum of square errors for all conditions ((dec-dat)**2)
-#and TSS is the sum of squared deviations around the mean of the observed data (averaged across conditions), corresponding to null model
+tss=[]
+ssenun=[]#for mlind
+ssecun=[]#for mlind
+sseun=[]#for mlind
+
+for i in dictTot.keys():
+    print(i)
+    tss.append(sse_calc(gmean,dictTot[i]))
+
+    modnun=param_extractor(mlParams,mlind,bwType="gradient/sum",avgSur=i,depmod=True,stdtransform=False)
+    decnun=col.decoder.ml(modnun.x,modnun.centery,modnun.resulty,modnun.unitTracker,avgSur=i,dataFit=True)
+    ssenun.append(sse_calc(decnun.angShift,dictTot[i]))
+    
+    modcun=param_extractor(mlParamscuni,mlindcuni,bwType="gradient/sum",avgSur=i,depmod=True,stdtransform=False)
+    deccun=col.decoder.ml(modcun.x,modcun.centery,modcun.resulty,modcun.unitTracker,avgSur=i,dataFit=True)
+    ssecun.append(sse_calc(deccun.angShift,dictTot[i]))
+    
+    modun=param_extractor(mlParamsuni,mlinduni,bwType="regular",avgSur=i,depmod=False,stdtransform=False)
+    decun=col.decoder.ml(modun.x,modun.centery,modun.resulty,modun.unitTracker,avgSur=i,dataFit=True)
+    sseun.append(sse_calc(decun.angShift,dictTot[i]))
+
+r2nun=1-(np.sum(ssenun)/np.sum(tss))
+r2cun=1-(np.sum(ssecun)/np.sum(tss))
+r2un=1-(np.sum(sseun)/np.sum(tss))
+#values like expected, only addition of parameters small percentage increase in explained variability.
+
+#*R^2= 1-(SSE/TSS) , SSE is UNWEIGHTED sum of square errors for all conditions ((dec-dat)**2)
+#and TSS is the sum of squared deviations around the mean of the observed data (averaged across conditions)
+#corresponding to null model encorporating the GLOBAL MEAN as the single parameter
+
+
+#END
+
+
 
 """
 AIK values (david a kenny)
