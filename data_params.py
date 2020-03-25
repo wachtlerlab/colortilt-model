@@ -1190,6 +1190,7 @@ for i in list(dictTot.keys()):
 
 """
 Global mean of the data (used for R^2, can also be used for null model)
+Everything denoted with g in the beginning are now related to the global mean null model.
 """
 gmean=np.mean(avgvals)
 
@@ -1200,11 +1201,14 @@ Here n=5 (5 participants, SE was calculated for each surround as sd(list(mean(ob
 
 #RMS calculation:
 nullRMS=[]#RMS per each surround
+gnullRMS=[]
 for i in list(dictTot.keys()):
     angshi=np.array(list(dictTot[i]["angshi"].values()))
     sterr=np.array(list(dictTot[i]["se"].values()))
     RMS=np.sqrt(np.mean((((avgvals[list(dictTot.keys()).index(i)]-angshi)/sterr)**2))) ##Formula: sqrt(mean(((model-data)/SE_data)^2))
+    gRMS=np.sqrt(np.mean((((gmean-angshi)/sterr)**2))) ##Formula: sqrt(mean(((model-data)/SE_data)^2))
     nullRMS.append(RMS)
+    gnullRMS.append(gRMS)
 
 #!!!CAUTION: The average observer data is normalized by its standard error, but this new normalized data also requires its variance for the further computation.
 
@@ -1233,6 +1237,7 @@ for i in dictTot.keys():
     mlchi.append(chi_sq_calc(dec.angShift,dictTot[i]))
 """
 nullchi=np.array(nullRMS)**2*16/5#chi square per each surround: sum(((dec-dat)/std(dat))**2) where dec and dat are hue shifts per surround (n=16)
+gnullchi=np.array(gnullRMS)**2*16/5#chi square per each surround: sum(((dec-dat)/std(dat))**2) where dec and dat are hue shifts per surround (n=16)
 
 """
 RMS**2/16 gives sum(((dec-dat)/SE)**2) and to come to std from SE (as in chi square=sum(((dec-dat)/std)**2)) SE has to be 
@@ -1244,36 +1249,69 @@ way out of the sum, i.e. RMS=sqrt(1/16*sum(((dec-dat)/s)**2*5))
 """
 Model error chi square with descending complexity (df inbetween for each is 1)
 """
+#ML
 mlchiun=np.array(list(mlParamsuni[mlinduni[0]]["dif"].values()))**2*16/5
 mlchicun=np.array(list(mlParamscuni[mlindcuni[0]]["dif"].values()))**2*16/5
 mlchinun=np.array(list(mlParams[mlind[0]]["dif"].values()))**2*16/5
 
+#Popvec
+pvchiun=np.array(list(popVecParamsuni[popvecinduni[0]]["dif"].values()))**2*16/5
+pvchicun=np.array(list(popVecParamscuni[popvecindcuni[0]]["dif"].values()))**2*16/5
+pvchinun=np.array(list(popVecParams[popvecind[0]]["dif"].values()))**2*16/5
+
 """
 # of variables for each model
 """
+#ML
+nullparams=len(dictTot)
 mlparamUn=len(mlParamsuni[0])-1
 mlparamCun=len(mlParamscuni[0])-2#as kb=ku
 mlparamNun=len(mlParams[0])-1
 
+#Popvec
+pvparamUn=len(popVecParamsuni[0])-1
+pvparamCun=len(popVecParamscuni[0])-2#as kb=ku
+pvparamNun=len(popVecParams[0])-1
 """
 chi square test between models
 """
-chiuncun=np.sum(mlchiun-mlchicun)#chi test between uniform and center only uniform
-dfuncun=mlparamCun-mlparamUn
-puncun=1-chisq.cdf(chiuncun,dfuncun)#says zero, so significant
+#ML
+chiuncunml=np.sum(mlchiun-mlchicun)#chi test between uniform and center only uniform
+dfuncunml=mlparamCun-mlparamUn
+puncunml=1-chisq.cdf(chiuncunml,dfuncunml)#says zero, so significant
 
-chicunnun=np.sum(mlchicun-mlchinun)#chi test between center only uniform and non-uniform  
-dfcunnun=mlparamNun-mlparamCun
-punnun=1-chisq.cdf(chicunnun,dfcunnun)#says zero, so significant
+chicunnunml=np.sum(mlchicun-mlchinun)#chi test between center only uniform and non-uniform  
+dfcunnunml=mlparamNun-mlparamCun
+punnunml=1-chisq.cdf(chicunnunml,dfcunnunml)#says zero, so significant
+
+#Popvec
+chiuncunpv=np.sum(pvchiun-pvchicun)#chi test between uniform and center only uniform
+dfuncunpv=pvparamCun-pvparamUn
+puncunpv=1-chisq.cdf(chiuncunpv,dfuncunpv)#says zero, so significant
+
+chicunnunpv=np.sum(pvchicun-pvchinun)#chi test between center only uniform and non-uniform  
+dfcunnunpv=pvparamNun-pvparamCun
+pcunnunpv=1-chisq.cdf(chicunnunpv,dfcunnunpv)#says zero, so significa
+
 #chi=chi(simple model)-chi(complex model), df is k(complex)-k(simple)
 
 """
 AIC of the models (to compare with null model as they are not nested)
 """
-nullaic=np.sum(nullchi)+2
+#Null
+gnullaic=np.sum(gnullchi)+2
+nullaic=np.sum(nullchi)+2*nullparams
+
+#ML
 mlunaic=np.sum(mlchiun)+2*mlparamUn
 mlcunaic=np.sum(mlchicun)+2*mlparamCun
 mlnunaic=np.sum(mlchinun)+2*mlparamNun
+
+#Popvec
+pvunaic=np.sum(pvchiun)+2*pvparamUn
+pvcunaic=np.sum(pvchicun)+2*pvparamCun
+pvnunaic=np.sum(pvchinun)+2*pvparamNun
+
 #AIC_model=chi_sq(model error)+2k (k:# of parameters)
 
 
@@ -1281,20 +1319,37 @@ mlnunaic=np.sum(mlchinun)+2*mlparamNun
 BIC of the models (to compare with null model as they are not nested)
 """
 obsnum=len(dictTot.keys())*len(dictTot[0]["angshi"].keys())#number of observations over all surrounds
-nullbic=np.sqrt(np.sum(nullchi))+np.log(obsnum)*1
+
+#Null
+gnullbic=np.sqrt(np.sum(gnullchi))+np.log(obsnum)*1
+nullbic=np.sqrt(np.sum(nullchi))+np.log(obsnum)*nullparams
+
+#ML
 mlunbic=np.sqrt(np.sum(mlchiun))+np.log(obsnum)*mlparamUn
 mlcunbic=np.sqrt(np.sum(mlchicun))+np.log(obsnum)*mlparamCun
 mlnunbic=np.sqrt(np.sum(mlchinun))+np.log(obsnum)*mlparamNun
 #Values not as expected and not fitting to AIC outcome
+
+#Popvec
+pvunbic=np.sqrt(np.sum(pvchiun))+np.log(obsnum)*pvparamUn
+pvcunbic=np.sqrt(np.sum(pvchicun))+np.log(obsnum)*pvparamCun
+pvnunbic=np.sqrt(np.sum(pvchinun))+np.log(obsnum)*pvparamNun
 #BIC_model=sqrt(chi_sq(model error))+ln(T)*k (T:# of observations)
 
 """
 BIC for nested models
 """
+#ML
 bicuncun=np.sum(mlchiun)-np.sum(mlchicun)-np.log(obsnum)*(mlparamCun-mlparamUn)
 biccunnun=np.sum(mlchicun)-np.sum(mlchinun)-np.log(obsnum)*(mlparamNun-mlparamCun)
 bicunnun=np.sum(mlchiun)-np.sum(mlchinun)-np.log(obsnum)*(mlparamNun-mlparamUn)
 #values as expected
+
+#Popvec
+bicuncunpv=np.sum(pvchiun)-np.sum(pvchicun)-np.log(obsnum)*(pvparamCun-pvparamUn)
+biccunnunpv=np.sum(pvchicun)-np.sum(pvchinun)-np.log(obsnum)*(pvparamNun-pvparamCun)
+bicunnunpv=np.sum(pvchiun)-np.sum(pvchinun)-np.log(obsnum)*(pvparamNun-pvparamUn)
+
 #nestedbic=(chi_sq(simple model error)-chi_sq(complex model error))-ln(T)*(k(complex)-k(simple))
 
 """
@@ -1305,13 +1360,19 @@ def sse_calc(dec,data):#dec is the best model angshift predictions, data is the 
 
 tss=[]
 ssenun=[]#for mlind
-ssecun=[]#for mlind
-sseun=[]#for mlind
+ssecun=[]#for mlindcuni
+sseun=[]#for mlinduni
+
+pvssenun=[]
+pvssecun=[]
+pvsseun=[]
+
 
 for i in dictTot.keys():
     print(i)
     tss.append(sse_calc(gmean,dictTot[i]))
-
+    
+    #ML
     modnun=param_extractor(mlParams,mlind,bwType="gradient/sum",avgSur=i,depmod=True,stdtransform=False)
     decnun=col.decoder.ml(modnun.x,modnun.centery,modnun.resulty,modnun.unitTracker,avgSur=i,dataFit=True)
     ssenun.append(sse_calc(decnun.angShift,dictTot[i]))
@@ -1323,11 +1384,34 @@ for i in dictTot.keys():
     modun=param_extractor(mlParamsuni,mlinduni,bwType="regular",avgSur=i,depmod=False,stdtransform=False)
     decun=col.decoder.ml(modun.x,modun.centery,modun.resulty,modun.unitTracker,avgSur=i,dataFit=True)
     sseun.append(sse_calc(decun.angShift,dictTot[i]))
+    
+    #Popvec
+    modnunpv=param_extractor(popVecParams,popvecind,bwType="gradient/sum",avgSur=i,depmod=True,stdtransform=False)
+    decnunpv=col.decoder.vecsum(modnunpv.x,modnunpv.resulty,modnunpv.unitTracker,avgSur=i,dataFit=True)
+    pvssenun.append(sse_calc(decnunpv.angShift,dictTot[i]))
+    
+    modcunpv=param_extractor(popVecParamscuni,popvecindcuni,bwType="gradient/sum",avgSur=i,depmod=True,stdtransform=False)
+    deccunpv=col.decoder.vecsum(modcunpv.x,modcunpv.resulty,modcunpv.unitTracker,avgSur=i,dataFit=True)
+    pvssecun.append(sse_calc(deccunpv.angShift,dictTot[i]))
+    
+    modunpv=param_extractor(popVecParamsuni,popvecinduni,bwType="regular",avgSur=i,depmod=False,stdtransform=False)
+    decunpv=col.decoder.vecsum(modunpv.x,modunpv.resulty,modunpv.unitTracker,avgSur=i,dataFit=True)
+    pvsseun.append(sse_calc(decun.angShift,dictTot[i]))
 
+
+#ML
 r2nun=1-(np.sum(ssenun)/np.sum(tss))
 r2cun=1-(np.sum(ssecun)/np.sum(tss))
 r2un=1-(np.sum(sseun)/np.sum(tss))
+
+#Popvec
+r2nunpv=1-(np.sum(pvssenun)/np.sum(tss))
+r2cunpv=1-(np.sum(pvssecun)/np.sum(tss))
+r2unpv=1-(np.sum(pvsseun)/np.sum(tss))
+
 #values like expected, only addition of parameters small percentage increase in explained variability.
+#Popvec wise interesting outcome, that best overall is pv center only uniform.
+
 
 #*R^2= 1-(SSE/TSS) , SSE is UNWEIGHTED sum of square errors for all conditions ((dec-dat)**2)
 #and TSS is the sum of squared deviations around the mean of the observed data (averaged across conditions)
