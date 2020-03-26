@@ -1126,9 +1126,13 @@ THE FIT INDICES APART FROM RMSEA
 *AIC between unnested models (Null and Rest): AIC_model=chi_sq(model error)+2k (k:# of parameters) TODO: implement done,
                                                 TODO: maybe convert to proportions relative to null model (ask TW)
 *BIC             -''-                       : BIC_model=sqrt(chi_sq(model error))+ln(T)*k (T:# of observations) TODO: implement done with a plot twist (ask TW)
+                                              TODO: TRY BIC WITH CHI SQUARE done
 *BIC for nested models: (chi_sq(simple model error)-chi_sq(complex model error))-ln(T)*(k(complex)-k(simple)) TODO: implement done
 *R square: R^2= 1-(SSE/TSS) , SSE is unweighted sum of square errors for all conditions ((dec-dat)**2)
 and TSS is the sum of squared deviations around the mean of the observed data (averaged across conditions), corresponding to null model
+
+READ TW CHAPTERS!
+MAKE TABLE OF ALL VALUES as excel folder
 """
 
 """
@@ -1282,7 +1286,11 @@ puncunml=1-chisq.cdf(chiuncunml,dfuncunml)#says zero, so significant
 
 chicunnunml=np.sum(mlchicun-mlchinun)#chi test between center only uniform and non-uniform  
 dfcunnunml=mlparamNun-mlparamCun
-punnunml=1-chisq.cdf(chicunnunml,dfcunnunml)#says zero, so significant
+pcunnunml=1-chisq.cdf(chicunnunml,dfcunnunml)#says zero, so significant
+
+chiunnunml=np.sum(mlchiun-mlchinun)#chi test between center only uniform and non-uniform  
+dfunnunml=mlparamNun-mlparamUn
+punnunml=1-chisq.cdf(chiunnunml,dfunnunml)#says zero, so significant
 
 #Popvec
 chiuncunpv=np.sum(pvchiun-pvchicun)#chi test between uniform and center only uniform
@@ -1291,8 +1299,11 @@ puncunpv=1-chisq.cdf(chiuncunpv,dfuncunpv)#says zero, so significant
 
 chicunnunpv=np.sum(pvchicun-pvchinun)#chi test between center only uniform and non-uniform  
 dfcunnunpv=pvparamNun-pvparamCun
-pcunnunpv=1-chisq.cdf(chicunnunpv,dfcunnunpv)#says zero, so significa
+pcunnunpv=1-chisq.cdf(chicunnunpv,dfcunnunpv)
 
+chiunnunpv=np.sum(pvchiun-pvchinun)#chi test between center only uniform and non-uniform  
+dfunnunpv=pvparamNun-pvparamUn
+punnunpv=1-chisq.cdf(chiunnunpv,dfunnunpv)#says zero, so significant
 #chi=chi(simple model)-chi(complex model), df is k(complex)-k(simple)
 
 """
@@ -1324,17 +1335,30 @@ obsnum=len(dictTot.keys())*len(dictTot[0]["angshi"].keys())#number of observatio
 gnullbic=np.sqrt(np.sum(gnullchi))+np.log(obsnum)*1
 nullbic=np.sqrt(np.sum(nullchi))+np.log(obsnum)*nullparams
 
+gnullbic2=np.sum(gnullchi)+np.log(obsnum)*1
+nullbic2=np.sum(nullchi)+np.log(obsnum)*nullparams
+
+
 #ML
 mlunbic=np.sqrt(np.sum(mlchiun))+np.log(obsnum)*mlparamUn
 mlcunbic=np.sqrt(np.sum(mlchicun))+np.log(obsnum)*mlparamCun
 mlnunbic=np.sqrt(np.sum(mlchinun))+np.log(obsnum)*mlparamNun
+
+mlunbic2=np.sum(mlchiun)+np.log(obsnum)*mlparamUn
+mlcunbic2=np.sum(mlchicun)+np.log(obsnum)*mlparamCun
+mlnunbic2=np.sum(mlchinun)+np.log(obsnum)*mlparamNun
 #Values not as expected and not fitting to AIC outcome
 
 #Popvec
 pvunbic=np.sqrt(np.sum(pvchiun))+np.log(obsnum)*pvparamUn
 pvcunbic=np.sqrt(np.sum(pvchicun))+np.log(obsnum)*pvparamCun
 pvnunbic=np.sqrt(np.sum(pvchinun))+np.log(obsnum)*pvparamNun
-#BIC_model=sqrt(chi_sq(model error))+ln(T)*k (T:# of observations)
+
+pvunbic2=np.sum(pvchiun)+np.log(obsnum)*pvparamUn
+pvcunbic2=np.sum(pvchicun)+np.log(obsnum)*pvparamCun
+pvnunbic2=np.sum(pvchinun)+np.log(obsnum)*pvparamNun
+
+#BIC_model=sqrt(chi_sq(model error))+ln(T)*k (T:# of observations) TRY WITH CHI SQUARE
 
 """
 BIC for nested models
@@ -1396,7 +1420,7 @@ for i in dictTot.keys():
     
     modunpv=param_extractor(popVecParamsuni,popvecinduni,bwType="regular",avgSur=i,depmod=False,stdtransform=False)
     decunpv=col.decoder.vecsum(modunpv.x,modunpv.resulty,modunpv.unitTracker,avgSur=i,dataFit=True)
-    pvsseun.append(sse_calc(decun.angShift,dictTot[i]))
+    pvsseun.append(sse_calc(decunpv.angShift,dictTot[i]))
 
 
 #ML
