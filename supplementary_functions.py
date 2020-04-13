@@ -235,6 +235,25 @@ class plotter:
             ax.axes.get_yaxis().set_visible(True)
             ax.axes.get_xaxis().set_visible(True)
         return ax1
+
+def subplot_namer(fig,label,size):
+    """Function to label manuscript subplots:
+        For a given figure object (can be figure or subplot) and a label (like numbers or letters), this function adds a text
+        on top left corner. Also the text size can be specified with size. This function is probably utterly unnecessary but it
+        also does not hurt to have it.
+        
+        Parameters
+        ----------
+        fig: figure object. The figure or subplot, which is wished to be labeled
+        label: string. The label of the figure object
+        size: float. The size of the label.
+        
+        Returns
+        -------
+        In return the function adds the wished text to the specific position
+    """
+    return fig.text(0.05,0.95,label,fontsize=size)
+
     
 """
 TO DO:

@@ -23,9 +23,9 @@ from matplotlib.ticker import MultipleLocator, FormatStrFormatter, AutoMinorLoca
 class pathes():
     """Specify the directory pathways for saving figures (figpath), saving scans (scanpath) or running other scripts (runpath)
     """
-    figpath=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\thesis_figures" #//TODO change the figure paths in scripts
-    runpath=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\python" #//TODO change the paths in scripts
-    scanpath=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\python\scans"   #//TODO change the scan paths in scan scripts
+    figpath=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\thesis_figures" #//TODO change the figure paths in scripts DONE
+    runpath=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\python" #//TODO change the paths in scripts DONE
+    scanpath=r"C:\Users\Ibrahim Alperen Tunc\.spyder-py3\bachelor_arbeit\python\scans"   #//TODO change the scan paths in scan scripts DONE
     
 class colmod:#add here the kappa phase variable.
     """The model class:
@@ -644,10 +644,7 @@ for i in np.linspace(0,180,9):
     ax2.plot(a.x,a.surroundy)
 #All seems fine, ready for the scan.
 """
-
-
-
-   
+  
 """
 If necessary, below is plot of surround suppression curves as a function of the surround hue
 """

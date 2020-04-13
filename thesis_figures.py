@@ -578,6 +578,245 @@ in colclass incorporated as the functions centphase and surphase
 """
 
 """
+Effect of kappa values on the popvec decoding error, Do also for vmfit and with labeling etc.
+Probably supplementary material
+
+fig=plt.figure()
+plt.suptitle("Maximum activity normalized model",fontsize=25)
+ax1=plt.subplot(2,3,1)
+ax2=plt.subplot(2,3,2)
+ax3=plt.subplot(2,3,3)
+ax4=plt.subplot(2,3,4)
+ax5=plt.subplot(2,3,5)
+ax6=plt.subplot(2,3,6)
+                
+plt.subplots_adjust(left=0.06, bottom=0.05, right=0.97, top=0.88, wspace=0.15, hspace=0.56)
+
+ax1.set_xticks(np.linspace(0,360,9)) 
+ax1.xaxis.set_major_locator(MultipleLocator(90))
+ax1.xaxis.set_major_formatter(FormatStrFormatter('%d')) 
+ax1.xaxis.set_minor_locator(MultipleLocator(45))
+  
+ax1.tick_params(axis='both', which='major', labelsize=15)
+ax1.plot([0,360],[0,0],linewidth=1,color="black")
+ax1.set_title("Error curve population vector",fontsize=20)
+ax1.set_xlabel("Hue angle [°]",fontsize=20)
+ax1.set_ylabel("Decoding error [°]",fontsize=20)
+
+ax2.set_xticks(np.linspace(0,360,9)) 
+ax2.xaxis.set_major_locator(MultipleLocator(90))
+ax2.xaxis.set_major_formatter(FormatStrFormatter('%d')) 
+ax2.xaxis.set_minor_locator(MultipleLocator(45))
+
+ax2.tick_params(axis='both', which='major', labelsize=15)
+ax2.plot([0,360],[0,0],linewidth=1,color="black")
+ax2.set_title("Error curve von Mises fit",fontsize=20)
+ax2.set_xlabel("Hue angle [°]",fontsize=20)
+
+ax3.set_title("Population activity at 135°",fontsize=20)
+ax3.set_xlabel("Preferred hue angle of the unit [°]",fontsize=20)
+ax3.set_ylabel("Activity [a.u.]",fontsize=20)
+ax3.set_yticks([])
+ax3.set_xticks(np.linspace(0,360,9))
+ax3.xaxis.set_major_locator(MultipleLocator(90))
+ax3.xaxis.set_minor_locator(MultipleLocator(45))
+ax3.xaxis.set_major_formatter(FormatStrFormatter('%d'))   
+ax3.tick_params(axis='both', which='major', labelsize=15)
+
+ax4.set_ylim([-11,11])
+ax4.set_xticks(np.linspace(0,360,9))
+ax4.xaxis.set_major_locator(MultipleLocator(90))
+ax4.xaxis.set_minor_locator(MultipleLocator(45))
+ax4.xaxis.set_major_formatter(FormatStrFormatter('%d'))   
+ax4.tick_params(axis='both', which='major', labelsize=15)
+ax4.plot([0,360],[0,0],linewidth=1,color="black")
+
+ax5.set_ylim([-11,11])
+ax5.set_xticks(np.linspace(0,360,9))
+ax5.xaxis.set_major_locator(MultipleLocator(90))
+ax5.xaxis.set_minor_locator(MultipleLocator(45))
+ax5.xaxis.set_major_formatter(FormatStrFormatter('%d'))   
+ax5.tick_params(axis='both', which='major', labelsize=15)
+ax5.plot([0,360],[0,0],linewidth=1,color="black")
+
+ax6.set_yticks([])
+ax6.set_xticks(np.linspace(0,360,9))
+ax6.xaxis.set_major_locator(MultipleLocator(90))
+ax6.xaxis.set_minor_locator(MultipleLocator(45))
+ax6.xaxis.set_major_formatter(FormatStrFormatter('%d'))   
+ax6.tick_params(axis='both', which='major', labelsize=15)
+
+fig.text(0.35,0.42,"Total area normalized model",fontsize=25)
+
+
+coolkapvals=[(1.5,0.5),(1.5,1),(2.5,0.5),(2.5,1.5)]
+for i in coolkapvals:
+    print("$\kappa_{max}=%s , \kappa_{min}=%s$"%(i[0],i[1]))
+    modmax=col.colmod(1,2,1,stdInt=i,bwType="gradient/max",depInt=[0.2,0.8],depmod=True,stdtransform=False)
+    vmmax=col.decoder.vmfit(modmax.x,modmax.centery,modmax.unitTracker)
+    pvmax=col.decoder.vecsum(modmax.x,modmax.centery,modmax.unitTracker)
+    
+    modsum=col.colmod(1,2,1,stdInt=i,bwType="gradient/sum",depInt=[0.2,0.8],depmod=True,stdtransform=False)
+    vmsum=col.decoder.vmfit(modsum.x,modsum.centery,modsum.unitTracker)
+    pvsum=col.decoder.vecsum(modsum.x,modsum.centery,modsum.unitTracker)
+        
+    asd=ax1.plot(np.arange(1,361),pvmax.angShift,label="$\kappa_{max}=%s , \kappa_{min}=%s$"%(i[0],i[1]))
+    cols=asd[0].get_color()
+    
+    ax2.plot(np.arange(1,361),vmmax.angShift,color=cols)
+    
+    maxpop=pvmax.surDecoder[134][134+180:]+pvmax.surDecoder[134][:134+180]
+    sumpop=pvsum.surDecoder[134][134+180:]+pvsum.surDecoder[134][:134+180]
+
+    
+    ax3.plot(np.arange(-45,315),maxpop,color=cols,label="[%s,%s]"%(i[1],i[0]))
+    ax3.legend(loc="upper right",prop={'size':12.5})
+
+    ax4.plot(np.arange(1,361),pvsum.angShift,color=cols)
+    ax5.plot(np.arange(1,361),vmsum.angShift,color=cols)
+    ax6.plot(np.arange(-45,315),sumpop,color=cols)
+
+    while True:
+        if plt.waitforbuttonpress(0):
+            break
+
+ax1.text(0,2.7,"A",fontsize=20)
+ax2.text(0,8.5,"B",fontsize=20)
+ax3.text(-45,0.93,"C",fontsize=20)#x value will change for sure.
+ax4.text(0,8.5,"D",fontsize=20)
+ax5.text(0,8.5,"E",fontsize=20)
+ax6.text(-45,0.00085,"F",fontsize=20)
+
+plt.savefig(path+"\\new\popvec_vmfit_error_plots.pdf")
+"""
+
+
+"""
+Figure try: fusion the all decoders at once and the decoding error figures
+LOOKS FUNKY, IT'S NOW THE SUPERFIGURE IN THE MANUSCRIPT
+
+fig=plt.figure()
+ax1=fig.add_subplot(1,3,1)
+ax2=fig.add_subplot(2,3,2)
+ax3=fig.add_subplot(2,3,3)
+ax4=fig.add_subplot(2,3,5)
+ax5=fig.add_subplot(2,3,6)
+
+ax1.text(-182,15.7,"A",fontsize=20)
+ax2.text(1,4.7,"B",fontsize=20)
+ax3.text(1,4.7,"C",fontsize=20)
+
+try:
+    col1;dec1v;dec1vm;dec1m;dec1mf
+except NameError:
+    col1=col.colmod(1.5,1,0.5,[1,10],bwType="regular")
+    dec1v=col.decoder.vecsum(col1.x,col1.resulty,col1.unitTracker)
+    dec1vm=col.decoder.vmfit(col1.x,col1.resulty,col1.unitTracker)
+    dec1m=col.decoder.ml(col1.x,col1.centery,col1.resulty,col1.unitTracker,tabStep=1)
+    dec1mf=col.decoder.maxfr(col1.x,col1.resulty,col1.unitTracker)
+
+ax1.set_ylabel("Induced hue shift [°]",fontsize=20)
+ax1.set_xlabel("Hue difference [°]",fontsize=20)
+ax1.tick_params(axis='both', which='major', labelsize=15)
+ax1.set_xticks(np.linspace(-180,180,9))
+ax1.xaxis.set_major_locator(MultipleLocator(90))
+ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+ax1.xaxis.set_minor_locator(MultipleLocator(45))
+
+ax1.plot(dec1v.centSurDif,dec1v.angShift,label=labs[0],color=colors[0])
+ax1.plot(dec1vm.centSurDif,dec1vm.angShift,label=labs[1],color=colors[1])
+ax1.plot(dec1m.centSurDif,dec1m.angShift,label=labs[2],color=colors[2])
+ax1.plot(dec1mf.centSurDif,dec1mf.angShift,label=labs[3],color=colors[3])
+ax1.legend(loc="lower right",prop={"size":12})
+
+
+modsum=col.colmod(1,1,1,stdInt=[2,1],bwType="gradient/sum",depInt=[0.2,0.8],depmod=True,stdtransform=False)
+
+mlsum=col.decoder.ml(modsum.x,modsum.centery,modsum.centery,modsum.unitTracker)
+vssum=col.decoder.vecsum(modsum.x,modsum.centery,modsum.unitTracker)
+mfrsum=col.decoder.maxfr(modsum.x,modsum.centery,modsum.unitTracker)
+vmsum=col.decoder.vmfit(modsum.x,modsum.centery,modsum.unitTracker)
+
+modfr=col.colmod(1,1,1,stdInt=[2,1],bwType="gradient/max",depInt=[0.2,0.8],depmod=True,stdtransform=False)
+
+mlfr=col.decoder.ml(modfr.x,modfr.centery,modfr.centery,modfr.unitTracker)
+vsfr=col.decoder.vecsum(modfr.x,modfr.centery,modfr.unitTracker)
+#mfrfr=col.decoder.maxfr(modfr.x,modfr.centery,modfr.unitTracker)
+vmfr=col.decoder.vmfit(modfr.x,modfr.centery,modfr.unitTracker)
+
+ax2.set_title("Total area normalized",fontsize=20)
+ax2.set_ylabel("Decoding Error [°]",fontsize=20)
+ax2.set_xlabel("Center stiumulus hue angle [°]",fontsize=20)
+ax2.set_xticks(np.linspace(0,360,9))
+ax2.tick_params(axis='both', which='major', labelsize=15)
+ax2.xaxis.set_major_locator(MultipleLocator(90))
+ax2.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+ax2.xaxis.set_minor_locator(MultipleLocator(45))
+ax2.set_ylim([-6,6])
+
+ax3.set_title("Maximum fire rate normalized",fontsize=20)
+ax3.set_xticks(np.linspace(0,360,9))
+ax3.set_yticks([])
+ax3.tick_params(axis='both', which='major', labelsize=15)
+ax3.xaxis.set_major_locator(MultipleLocator(90))
+ax3.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+ax3.xaxis.set_minor_locator(MultipleLocator(45))
+ax3.set_ylim([-6,6])
+
+
+labs=["population vector","von Mises fit","maximum likelihood"]
+colors=["green","teal","magenta"]
+sumdecs=["vssum","vmsum","mlsum"]
+frdecs=["vsfr","vmfr","mlfr"]
+for i in range(0,3):
+    ax2.plot(np.array(eval(sumdecs[i]).centSurDif)+180,eval(sumdecs[i]).angShift,label=labs[i],color=colors[i])
+    ax3.plot(np.array(eval(frdecs[i]).centSurDif)+180,eval(frdecs[i]).angShift,label=labs[i],color=colors[i])
+
+ax4.set_ylabel("Unit activity [a.u.]",fontsize=20)
+ax4.set_xlabel("Center stiumulus hue angle [°]",fontsize=20)
+ax4.set_xticks(np.linspace(0,360,9))
+ax4.xaxis.set_major_locator(MultipleLocator(90))
+ax4.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+ax4.xaxis.set_minor_locator(MultipleLocator(45))
+ax4.tick_params(axis='both', which='major', labelsize=15)
+ax4.set_yticks([])
+ax4.set_xlim([0,360])
+
+ax5.set_xticks(np.linspace(0,360,9))
+ax5.set_yticks([])
+ax5.tick_params(axis='both', which='major', labelsize=15)
+ax5.xaxis.set_major_locator(MultipleLocator(90))
+ax5.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+ax5.xaxis.set_minor_locator(MultipleLocator(45))
+ax5.set_xlim([0,360])
+
+for j in range(23,len(modsum.centery)+1,23):
+    ax4.plot(modsum.x[np.where(modsum.x==0)[0][0]:np.where(modsum.x==360)[0][0]],modsum.centery[j-1][np.where(modsum.x==0)[0][0]:np.where(modsum.x==360)[0][0]],color="black",linewidth=1)
+    ax5.plot(modfr.x[np.where(modfr.x==0)[0][0]:np.where(modfr.x==360)[0][0]],modfr.centery[j-1][np.where(modfr.x==0)[0][0]:np.where(modfr.x==360)[0][0]],color="black",linewidth=1)
+
+mng = plt.get_current_fig_manager()
+mng.window.state("zoomed")
+plt.pause(0.1)
+plt.subplots_adjust(left=0.06, bottom=0.09, right=0.98, top=0.95, wspace=0.24, hspace=0.29)
+
+box2=ax2.get_position()#to change the subplot positioning, use this here instead of plt.adjust()
+box2.x0+=0.04
+box2.x1+=0.04
+ax2.set_position(box2)
+
+box4=ax4.get_position()#to change the subplot positioning, use this here instead of plt.adjust()
+box4.x0+=0.04
+box4.x1+=0.04
+ax4.set_position(box4)
+
+box1=ax1.get_position()#to change the subplot positioning, use this here instead of plt.adjust()
+box1.x1+=0.04
+ax1.set_position(box1)
+
+plt.savefig(path+"\\new\decoding_error_and_decoders_fig.pdf")
+"""
+
+"""
 FIGURES TO PUT:
 Parameter distribution DONE BUT MANUAL
 Best fit of both models in same plot without data DONE BUT MANUAL
