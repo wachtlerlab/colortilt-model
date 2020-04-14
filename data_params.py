@@ -45,17 +45,27 @@ def file_opener(dataName,rmsThres):
 """
 Histogram of the parameter distribution. FIGURE 6
 """
+"""
+popvec 
+"""
 popVecParams,popVecRms,popvecflt,popvecind,popvecout=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-01-25_nocorr",4.5)
-mlParams,mlRms,mlflt,mlind,mlout=file_opener("paraml_fit_10_decoder_ml_errType_rms_2019-08-23",4)
 popVecParamsmf,popVecRmsmf,popvecfltmf,popvecindmf,popvecoutmf=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-01-25_nocorr_maxnorm",4.5)
+popVecParamsuni,popVecRmsuni,popvecfltuni,popvecinduni,popvecoutuni=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-02-14_nocorr_uni",4.5)
+popVecParamscuni,popVecRmscuni,popvecfltcuni,popvecindcuni,popvecoutcuni=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-02-14_nocorr_unicent",4.5)
 
-mlParamsskm,mlRmsskm,mlfltskm,mlindskm,mloutskm=file_opener("paraml_fit_7_decoder_ml_errType_rms_2020-02-22_surkap_modulated_ksurphase_112.5",4)#surround kappa modulated scan
-mlParamsskm2,mlRmsskm2,mlfltskm2,mlindskm2,mloutskm2=file_opener("paraml_fit_7_decoder_ml_errType_rms_2020-02-20_surkap_modulated",4)#surround kappa modulated scan
+"""
+ml
+"""
+mlParams,mlRms,mlflt,mlind,mlout=file_opener("paraml_fit_10_decoder_ml_errType_rms_2019-08-23",4)
+mlParamsuni,mlRmsuni,mlfltuni,mlinduni,mloutuni=file_opener("paraml_fit_10_decoder_ml_errType_rms_2020-02-14_uni",4.5)
+mlParamscuni,mlRmscuni,mlfltcuni,mlindcuni,mloutcuni=file_opener("paraml_fit_10_decoder_ml_errType_rms_2020-02-15_unicent",4.5)
 
-mlParamsskm3,mlRmsskm3,mlfltskm3,mlindskm3,mloutskm3=file_opener("paraml_fit_10_decoder_ml_errType_rms_ksurphase=22.5_kcentphase=112.5_2020-03-17",5)#not worked out well
-mlParamsskm4,mlRmsskm4,mlfltskm4,mlindskm4,mloutskm4=file_opener("paraml_fit_10_decoder_ml_errType_rms_ksurphase=112.5_kcentphase=22.5_2020-03-18",5)#not worked out well
 
-mlParamsskm5,mlRmsskm5,mlfltskm5,mlindskm5,mloutskm5=file_opener("paraml_fit_10_decoder_ml_errType_rms_ksurphase=112.5_kcentphase=22.5_2020-03-18",5)#not worked out well
+#mlParamsskm,mlRmsskm,mlfltskm,mlindskm,mloutskm=file_opener("paraml_fit_7_decoder_ml_errType_rms_2020-02-22_surkap_modulated_ksurphase_112.5",4)#surround kappa modulated scan
+#mlParamsskm2,mlRmsskm2,mlfltskm2,mlindskm2,mloutskm2=file_opener("paraml_fit_7_decoder_ml_errType_rms_2020-02-20_surkap_modulated",4)#surround kappa modulated scan
+#mlParamsskm3,mlRmsskm3,mlfltskm3,mlindskm3,mloutskm3=file_opener("paraml_fit_10_decoder_ml_errType_rms_ksurphase=22.5_kcentphase=112.5_2020-03-17",5)#not worked out well
+#mlParamsskm4,mlRmsskm4,mlfltskm4,mlindskm4,mloutskm4=file_opener("paraml_fit_10_decoder_ml_errType_rms_ksurphase=112.5_kcentphase=22.5_2020-03-18",5)#not worked out well
+#mlParamsskm5,mlRmsskm5,mlfltskm5,mlindskm5,mloutskm5=file_opener("paraml_fit_10_decoder_ml_errType_rms_ksurphase=112.5_kcentphase=22.5_2020-03-18",5)#not worked out well
 
 plt.figure()
 plt.hist(mlRms,bins=100,color="black")#min mean val is 3.74, taking mean rms=4 as threshold to look at parameter properties    
@@ -73,11 +83,14 @@ plt.ylabel("Number of models",fontsize=15)
 plt.xticks(np.arange(3.7,7.6,0.2),)
 plt.tick_params(axis='both', which='major', labelsize=15)
 
-def param_calculator(paraml,fltind,outind,rmslist,rmsThres,dataPlot=False,deco="ml",paraml2=None,fltind2=None,datDict=None,speplot=False,unimod=False,bwType="gradient/sum",bwType2="gradient/sum"):
+def param_calculator(paraml,fltind,outind,rmslist,rmsThres,dataPlot=False,deco="ml",paraml2=None,fltind2=None,datDict=None,speplot=False,unimod=False,bwType="gradient/sum",bwType2="gradient/sum",label=None,nonunif=True):
     #paraml2 for deco=="both", that 2nd colmod model is created for the other decoder (1st ml, 2nd vecsum)
     #speplot: use to specify the model you want to plot (based on the index entry)
     #unimod: use to specify if plotted model is uniform or non-uniform (for uniform model the dictionary has to be slightly different)
     #bwType is for 1st model, bwType2 only when bothdec 
+    #label is for putting labels on the color coded parameter space plot
+    #nonunif is a binary variable, if True, then it is nonuniform model, else it is for now center only uniform model, so that 
+    #for the parameter plot the number of subplots can be reduced to a considerable amount.
     """
     Calculate average center BW, min-max center BW difference, average sur mod depth, min-max sur mod depth by using following parameters:
     Parameters: surround modulation width, average center BW, min-max center BW difference, average mod depth sur, min-max mod depth sur (phase all equal in this case)
@@ -228,25 +241,49 @@ def param_calculator(paraml,fltind,outind,rmslist,rmsThres,dataPlot=False,deco="
         """    
         i=0
         fig2 = plt.figure()
+        if label!=None:
+            fig2.text(0.05,0.95,label,fontsize=20)
+        else:
+            pass
+        
         plt.title("Parameter distribution of models %s decoder"%(decName),y=1.08,fontsize=18)
         plt.xticks([])
         plt.yticks([])
         plt.box(False)
-        for j in range(0,4):
-            x=plotdict[params[j]]
-            for k in range(1,5):
-                if j>=k:
-                    continue
-                y=plotdict[params[k]]
-                i=i+1
-                ax=fig2.add_subplot(3,4,i)
-                a=ax.scatter(x,y,c=np.array(rmslist),cmap='jet')
-                ax.set_title('x=%s , y=%s'%(params[j],params[k]),fontdict={'fontsize': 15, 'fontweight': 'medium'})
-                ax.tick_params(axis='both', which='major', labelsize=15)
-        colbar=plt.colorbar(a,extend="max")
-        a.set_clim(np.round(min(rmslist)-0.05,1),np.round(min(rmslist)+0.6,1))
-        colbar.ax.tick_params(labelsize=15)
-        plt.subplots_adjust(left=0.05, bottom=0.05, right=0.99, top=0.89, wspace=0.2, hspace=0.39)
+        
+        if nonunif==True:
+            for j in range(0,4):
+                x=plotdict[params[j]]
+                for k in range(1,5):
+                    if j>=k:
+                        continue
+                    y=plotdict[params[k]]
+                    i=i+1
+                    ax=fig2.add_subplot(3,4,i)
+                    a=ax.scatter(x,y,c=np.array(rmslist),cmap='jet')
+                    ax.set_title('x=%s , y=%s'%(params[j],params[k]),fontdict={'fontsize': 15, 'fontweight': 'medium'})
+                    ax.tick_params(axis='both', which='major', labelsize=15)
+            colbar=plt.colorbar(a,extend="max")
+            a.set_clim(np.round(min(rmslist)-0.05,1),np.round(min(rmslist)+0.6,1))
+            colbar.ax.tick_params(labelsize=15)
+            plt.subplots_adjust(left=0.05, bottom=0.05, right=0.99, top=0.89, wspace=0.2, hspace=0.39)
+        else:
+            params.remove("cBWd")
+            for j in range(0,3):
+                x=plotdict[params[j]]
+                for k in range(1,4):
+                    if j>=k:
+                        continue
+                    y=plotdict[params[k]]
+                    i=i+1
+                    ax=fig2.add_subplot(2,3,i)
+                    a=ax.scatter(x,y,c=np.array(rmslist),cmap='jet')
+                    ax.set_title('x=%s , y=%s'%(params[j],params[k]),fontdict={'fontsize': 15, 'fontweight': 'medium'})
+                    ax.tick_params(axis='both', which='major', labelsize=15)
+            colbar=plt.colorbar(a,extend="max")
+            a.set_clim(np.round(min(rmslist)-0.05,1),np.round(min(rmslist)+0.6,1))
+            colbar.ax.tick_params(labelsize=15)
+            plt.subplots_adjust(left=0.05, bottom=0.05, right=0.99, top=0.89, wspace=0.2, hspace=0.39)
 
     """
     Look at the filtered model fits with waitforbuttonpress 
@@ -379,13 +416,19 @@ def param_calculator(paraml,fltind,outind,rmslist,rmsThres,dataPlot=False,deco="
 bothdec=param_calculator(mlParams,mlind,mlout,mlRms,4.5,deco="both",dataPlot=True,paraml2=popVecParams,fltind2=popvecind)
 bothdec2=param_calculator(mlParams,mlind,mlout,mlRms,4.5,deco="both",dataPlot=True,paraml2=popVecParamsmf,fltind2=popvecindmf,bwType2="gradient/max")
 
-mldec=param_calculator(mlParams,mlind,mlout,mlRms,4,deco="ml",dataPlot=True)
+bothdecbest=param_calculator(mlParams,mlind,mlout,mlRms,4.5,deco="both",dataPlot=True,paraml2=popVecParamscuni,fltind2=popvecindcuni)
+
+#Best models
+mldec=param_calculator(mlParams,mlind,mlout,mlRms,4,deco="ml",dataPlot=True,label="A")
+pvcuni=param_calculator(popVecParamscuni,popvecindcuni,popvecoutcuni,popVecRmscuni,4.5,deco="vecsum",dataPlot=True,bwType="gradient/sum",label="B",nonunif=False)
+
+#Other considerations
 pvsum=param_calculator(popVecParams,popvecind,popvecout,popVecRms,4.5,deco="vecsum",dataPlot=True)
 pvmf=param_calculator(popVecParamsmf,popvecindmf,popvecoutmf,popVecRmsmf,4.5,deco="vecsum",dataPlot=True,bwType="gradient/max")
 
 
-
 #Same trick as before, try to open the pckl file, if not create one
+#TODO: redo this with popvec cuni
 try: 
     with open('dictionaries_pvtotarea_2020-02-11.json',"rb") as file:
         datDicts=json.load(file)
@@ -438,7 +481,7 @@ data=json.load(file)
 Best model different decoders RMS plots relative to different surrounds
 """
 mlbestRMS=mlParams[mlind[0]]["dif"]
-pvbestRMS=popVecParams[popvecind[0]]["dif"]
+pvbestRMS=popVecParamscuni[popvecindcuni[0]]["dif"]
 plt.figure()
 ax=plt.subplot(111)
 ax.bar(np.array(list(mlbestRMS.keys()))-2.5,list(mlbestRMS.values()), width=5, color="magenta", align="center",label="Maximum likelihood")
@@ -455,6 +498,232 @@ plt.subplots_adjust(left=0.06, bottom=0.12, right=0.99, top=0.99, wspace=0, hspa
 plt.savefig(path+"\\decoder_models_comparison.pdf")
 #mlSymDict=param_calculator(mlParams,mlind,mlout,4)
 #popvecSymDict=param_calculator(popVecParams,popvecind,popvecout,4.5,deco="vecsum")
+
+
+"""
+Kappa and depmod distribution for different surround conditions for best model
+Do after looking at the error correction stuff, as this could lead to change in vecsum object etc.
+"""
+#Kappa
+def kappa_vals(kdown,kup,phase):
+    kapmod=(kdown-kup)/2*np.cos(2*np.deg2rad(np.linspace(0,359,360)-phase))+kup+(kdown-kup)/2#Kappa Modulator, see also depth_modulator() in supplementary_functions.py
+    return kapmod
+
+#Suppression strength
+def dep_vals(depInt,phase):
+    depval=[]
+    for i in np.linspace(0,359,360):
+        depval.append(depth_modulator(depInt,i,phase))
+    return depval
+
+mlbest=mlParams[mlind[0]]
+pvbest=popVecParams[popvecind[0]]
+pvbestmf=popVecParamsmf[popvecindmf[0]]
+
+mlkap=kappa_vals(mlbest["ku"],mlbest["kb"],mlbest["phase"])
+pvkap=kappa_vals(pvbest["ku"],pvbest["kb"],pvbest["phase"])
+pvkapmf=kappa_vals(pvbestmf["ku"],pvbestmf["kb"],pvbestmf["phase"])
+
+mldep=dep_vals([mlbest["depb"],mlbest["depu"]],mlbest["phase"])
+pvdep=dep_vals([pvbest["depb"],pvbest["depu"]],pvbest["phase"])
+pvdepmf=dep_vals([pvbestmf["depb"],pvbestmf["depu"]],pvbestmf["phase"])
+
+fig=plt.figure()
+plt.title("Kappa distribution",fontsize=30,y=1.08)
+plt.xticks([])
+plt.yticks([])
+plt.box(False)
+ax1=fig.add_subplot(1,2,1,projection='polar')
+ax1.plot(np.deg2rad(np.linspace(0,359,360)),mlkap,".",color="magenta",label="Maximum likelihood")
+ax1.set_ylim(0.8,1.3)
+ax1.set_yticks(np.arange(0.8,1.3,0.1))
+ax1.tick_params(axis='both', which='major', labelsize=20)
+ax1.set_title("Maximum likelihood",fontsize=30,y=1.08)
+
+
+ax1=fig.add_subplot(1,2,2,projection='polar')
+ax1.plot(np.deg2rad(np.linspace(0,359,360)),pvkap,".",color="green",label="Population vector decoder")
+ax1.set_ylim(1.8,2.1)
+ax1.set_yticks(np.arange(1.8,2.1,0.1))
+ax1.tick_params(axis='both', which='major', labelsize=20)
+ax1.set_title("Population vector decoder",fontsize=30,y=1.08)
+
+fig=plt.figure()
+plt.title("Surround modulation strength",fontsize=30,y=1.08)
+plt.xticks([])
+plt.yticks([])
+plt.box(False)
+ax1=fig.add_subplot(1,2,1,projection='polar')
+ax1.plot(np.deg2rad(np.linspace(0,359,360)),mldep,".",color="magenta",label="Maximum likelihood")
+ax1.set_ylim(0.1,0.5)
+ax1.set_yticks(np.arange(0.1,0.5,0.1))
+ax1.tick_params(axis='both', which='major', labelsize=20)
+ax1.set_title("Maximum likelihood",fontsize=30,y=1.08)
+
+
+ax1=fig.add_subplot(1,2,2,projection='polar')
+ax1.plot(np.deg2rad(np.linspace(0,359,360)),pvdep,".",color="green",label="Population vector decoder")
+ax1.set_ylim(0.3,0.7)
+ax1.set_yticks(np.arange(0.4,0.7,0.1))
+ax1.tick_params(axis='both', which='major', labelsize=20)
+ax1.set_title("Population vector decoder",fontsize=30,y=1.08)
+
+
+"""
+Same as above but linear coordinate systems:
+"""
+fig=plt.figure()
+plt.xticks([])
+plt.yticks([])
+plt.box(False)
+
+ax1=fig.add_subplot(1,2,1)
+ax1.plot(np.linspace(0,359,360),mlkap,color="magenta",label="Maximum likelihood",linewidth=3)
+ax1.plot(np.linspace(0,359,360),pvkap,color="green",label="Population vector decoder",linewidth=3)
+ax1.set_xticks(np.linspace(0,360,9))
+ax1.xaxis.set_major_locator(MultipleLocator(90))
+ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+ax1.xaxis.set_minor_locator(MultipleLocator(45))
+ax1.tick_params(axis='both', which='major', labelsize=20)
+ax1.set_ylim([0,2.1])
+ax1.set_title("Kappa distribution",fontsize=30)
+
+ax2=fig.add_subplot(1,2,2)
+ax2.plot(np.linspace(0,359,360),mldep,color="magenta",label="Maximum likelihood",linewidth=3)
+ax2.plot(np.linspace(0,359,360),pvdep,color="green",label="Population vector decoder",linewidth=3)
+ax2.tick_params(axis='both', which='major', labelsize=20)
+ax2.set_xticks(np.linspace(0,360,9))
+ax2.xaxis.set_major_locator(MultipleLocator(90))
+ax2.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+ax2.xaxis.set_minor_locator(MultipleLocator(45))
+ax2.set_yticks(np.linspace(0,0.6,7))
+ax2.set_title("Surround modulation strength",fontsize=30)
+ax1.legend(loc="best",prop={'size':20})
+mng = plt.get_current_fig_manager()
+mng.window.state("zoomed")
+plt.pause(0.1)
+plt.subplots_adjust(left=0.05, bottom=0.07, right=0.99, top=0.94, wspace=0.11, hspace=0.28)
+plt.savefig(path+"\\dep_kap_plots.pdf")
+#USE TOTAL AREA NORMALIZED VECSUM
+
+"""
+Depmod distribution plots for center-only uniform models
+"""
+mlbestcuni=mlParamscuni[mlindcuni[0]]
+pvbestcuni=popVecParams[popvecindcuni[0]]
+
+mldepcuni=dep_vals([mlbestcuni["depb"],mlbestcuni["depu"]],mlbestcuni["phase"])
+pvdepcuni=dep_vals([pvbestcuni["depb"],pvbestcuni["depu"]],pvbestcuni["phase"])
+
+fig=plt.figure()
+plt.xticks([])
+plt.yticks([])
+ax1=fig.add_subplot(1,1,1)
+ax1.plot(np.linspace(0,359,360),mldepcuni,color="magenta",label="Maximum likelihood",linewidth=3)
+ax1.plot(np.linspace(0,359,360),pvdepcuni,color="green",label="Population vector decoder",linewidth=3)
+ax1.set_xticks(np.linspace(0,360,9))
+ax1.xaxis.set_major_locator(MultipleLocator(90))
+ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+ax1.xaxis.set_minor_locator(MultipleLocator(45))
+ax1.tick_params(axis='both', which='major', labelsize=20)
+ax1.set_yticks(np.linspace(0,0.8,9))
+ax1.set_title("Surround modulation strength",fontsize=30)
+ax1.legend(loc="best",prop={'size':20})
+mng = plt.get_current_fig_manager()
+mng.window.state("zoomed")
+plt.pause(0.1)
+plt.subplots_adjust(left=0.04, bottom=0.05, right=0.99, top=0.93, wspace=0.11, hspace=0.28)
+
+
+#TODO: MAKE A SINGLE PLOT OUTTA THOSE 5 PLOTS ABOVE
+#Take 2: put the polar plots inside the linear ones (https://stackoverflow.com/questions/17458580/embedding-small-plots-inside-subplots-in-matplotlib)
+#Conclusion: Ignore polar plot, linear is enough
+fig=plt.figure()
+ax1=plt.subplot(2,1,1)#RMS PLOT
+ax2=plt.subplot(2,2,3)#lin kappa
+ax3=plt.subplot(2,2,4)#lin surr
+
+#Plot fine tunings
+plt.subplots_adjust(left=0.05, bottom=0.1, right=0.99, top=0.98, wspace=0.17, hspace=0.38)
+fig.text(0.08,0.92,"A",fontsize=20)
+fig.text(0.08,0.43,"B",fontsize=20)
+fig.text(0.57,0.43,"C",fontsize=20)
+
+#RMS PLOT
+ax1.bar(np.array(list(mlbestRMS.keys()))-2.5,list(mlbestRMS.values()), width=5, color="magenta", align="center",label="Maximum likelihood")
+ax1.bar(np.array(list(mlbestRMS.keys()))+2.5,list(pvbestRMS.values()), width=5, color="green", align="center",label="Population vector")
+ax1.tick_params(axis='both', which='major', labelsize=15)
+ax1.set_xticks(np.linspace(0,315,8))
+ax1.set_xlabel("Surround hue angle [°]",fontsize=20)
+ax1.set_ylabel("RMS",fontsize=20)
+ax1.legend(bbox_to_anchor=(0.07,0.6),fontsize=15)
+ax1.set_ylim([0,7.5])
+ax1.set_yticks(np.arange(0,8))
+
+
+#LINEAR PLOTS
+#------------
+#KAPPA
+ax2.plot(np.linspace(0,359,360),mlkap,color="magenta",linewidth=3)
+ax2.plot(np.linspace(0,359,360),pvkap,color="green",linewidth=3)
+ax2.set_xticks(np.linspace(0,360,9))
+ax2.xaxis.set_major_locator(MultipleLocator(90))
+ax2.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+ax2.xaxis.set_minor_locator(MultipleLocator(45))
+ax2.set_ylim([0.75,2.1])
+ax2.set_yticks(np.linspace(0.8,2,7))
+ax2.tick_params(axis='both', which='major', labelsize=15)
+ax2.set_title("Tuning Bandwidth $\kappa$",fontsize=20)
+ax2.set_xlabel("Preferred hue angle [°]",fontsize=20)
+ax2.set_ylabel("$\kappa$",fontsize=20)
+#SURR
+ax3.plot(np.linspace(0,359,360),mldep,color="magenta",linewidth=3)
+ax3.plot(np.linspace(0,359,360),pvdep,color="green",linewidth=3)
+ax3.tick_params(axis='both', which='major', labelsize=15)
+ax3.set_xticks(np.linspace(0,360,9))
+ax3.xaxis.set_major_locator(MultipleLocator(90))
+ax3.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+ax3.xaxis.set_minor_locator(MultipleLocator(45))
+ax3.set_yticks(np.linspace(0,0.6,7))
+ax3.set_ylim([0.1,0.67])
+ax3.set_title("Surround Suppression Strength",fontsize=20)
+ax3.set_xlabel("Surround hue angle [°]",fontsize=20)
+ax3.set_ylabel("Suppression strength",fontsize=20)
+plt.savefig(path+"\\new\\rms_dep_kap_plots_best_models.pdf")
+"""
+#POLAR KAPPA
+#-----------
+#ML
+#ax2.set_title("Kappa distribution",fontsize=30,y=1.08)#Do with text
+ax2.plot(np.deg2rad(np.linspace(0,359,360)),mlkap,".",color="magenta")
+ax2.set_ylim(0.8,1.3)
+ax2.set_yticks(np.arange(0.8,1.3,0.1))
+ax2.tick_params(axis='both', which='major', labelsize=15)
+
+#PV
+ax3.plot(np.deg2rad(np.linspace(0,359,360)),pvkap,".",color="green")
+ax3.set_ylim(1.7,1.9)
+ax3.set_yticks(np.arange(1.7,1.9,0.1))
+ax3.tick_params(axis='both', which='major', labelsize=15)
+
+#POLAR SURR
+#----------
+#ML
+#plt.title("Surround modulation strength",fontsize=30,y=1.08)#Text
+ax4.plot(np.deg2rad(np.linspace(0,359,360)),mldep,".",color="magenta")
+ax4.set_ylim(0.1,0.5)
+ax4.set_yticks(np.arange(0.1,0.5,0.1))
+ax4.tick_params(axis='both', which='major', labelsize=15)
+
+#PV
+ax5.plot(np.deg2rad(np.linspace(0,359,360)),pvdep,".",color="green")
+ax5.set_ylim(0.3,0.7)
+ax5.set_yticks(np.arange(0.4,0.7,0.1))
+ax5.tick_params(axis='both', which='major', labelsize=15)
+
+#Plot fine tuning
+plt.subplots_adjust(left=0.04, bottom=0.05, right=0.99, top=0.98, wspace=0.12, hspace=0.41)
+"""
 
 
 """
@@ -922,7 +1191,7 @@ popVecParamscuni,popVecRmscuni,popvecfltcuni,popvecindcuni,popvecoutcuni=file_op
 mlParamscuni,mlRmscuni,mlfltcuni,mlindcuni,mloutcuni=file_opener("paraml_fit_10_decoder_ml_errType_rms_2020-02-15_unicent",4.5)
 
 mlbestRMS=mlParams[mlind[0]]["dif"]
-mlbestRMSskm=mlParamsskm2[mlindskm2[0]]["dif"]
+#mlbestRMSskm=mlParamsskm2[mlindskm2[0]]["dif"]
 
 pvbestRMS=popVecParams[popvecind[0]]["dif"]
 
@@ -971,143 +1240,6 @@ mng.window.state("zoomed")
 plt.pause(0.1)
 plt.subplots_adjust(left=0.06, bottom=0.12, right=0.99, top=0.94, wspace=0, hspace=0)
 plt.savefig(path+"\\rms_error_ml_pv_uni_nonuni_cuni.pdf")
-
-"""
-Kappa and depmod distribution for different surround conditions for best model
-Do after looking at the error correction stuff, as this could lead to change in vecsum object etc.
-"""
-#Kappa
-def kappa_vals(kdown,kup,phase):
-    kapmod=(kdown-kup)/2*np.cos(2*np.deg2rad(np.linspace(0,359,360)-phase))+kup+(kdown-kup)/2#Kappa Modulator, see also depth_modulator() in supplementary_functions.py
-    return kapmod
-
-#Suppression strength
-def dep_vals(depInt,phase):
-    depval=[]
-    for i in np.linspace(0,359,360):
-        depval.append(depth_modulator(depInt,i,phase))
-    return depval
-
-mlbest=mlParams[mlind[0]]
-pvbest=popVecParams[popvecind[0]]
-pvbestmf=popVecParamsmf[popvecindmf[0]]
-
-mlkap=kappa_vals(mlbest["ku"],mlbest["kb"],mlbest["phase"])
-pvkap=kappa_vals(pvbest["ku"],pvbest["kb"],pvbest["phase"])
-pvkapmf=kappa_vals(pvbestmf["ku"],pvbestmf["kb"],pvbestmf["phase"])
-
-mldep=dep_vals([mlbest["depb"],mlbest["depu"]],mlbest["phase"])
-pvdep=dep_vals([pvbest["depb"],pvbest["depu"]],pvbest["phase"])
-pvdepmf=dep_vals([pvbestmf["depb"],pvbestmf["depu"]],pvbestmf["phase"])
-
-fig=plt.figure()
-plt.title("Kappa distribution",fontsize=30,y=1.08)
-plt.xticks([])
-plt.yticks([])
-plt.box(False)
-ax1=fig.add_subplot(1,2,1,projection='polar')
-ax1.plot(np.deg2rad(np.linspace(0,359,360)),mlkap,".",color="magenta",label="Maximum likelihood")
-ax1.set_ylim(0.8,1.3)
-ax1.set_yticks(np.arange(0.8,1.3,0.1))
-ax1.tick_params(axis='both', which='major', labelsize=20)
-ax1.set_title("Maximum likelihood",fontsize=30,y=1.08)
-
-
-ax1=fig.add_subplot(1,2,2,projection='polar')
-ax1.plot(np.deg2rad(np.linspace(0,359,360)),pvkap,".",color="green",label="Population vector decoder")
-ax1.set_ylim(1.8,2.1)
-ax1.set_yticks(np.arange(1.8,2.1,0.1))
-ax1.tick_params(axis='both', which='major', labelsize=20)
-ax1.set_title("Population vector decoder",fontsize=30,y=1.08)
-
-fig=plt.figure()
-plt.title("Surround modulation strength",fontsize=30,y=1.08)
-plt.xticks([])
-plt.yticks([])
-plt.box(False)
-ax1=fig.add_subplot(1,2,1,projection='polar')
-ax1.plot(np.deg2rad(np.linspace(0,359,360)),mldep,".",color="magenta",label="Maximum likelihood")
-ax1.set_ylim(0.1,0.5)
-ax1.set_yticks(np.arange(0.1,0.5,0.1))
-ax1.tick_params(axis='both', which='major', labelsize=20)
-ax1.set_title("Maximum likelihood",fontsize=30,y=1.08)
-
-
-ax1=fig.add_subplot(1,2,2,projection='polar')
-ax1.plot(np.deg2rad(np.linspace(0,359,360)),pvdep,".",color="green",label="Population vector decoder")
-ax1.set_ylim(0.3,0.7)
-ax1.set_yticks(np.arange(0.4,0.7,0.1))
-ax1.tick_params(axis='both', which='major', labelsize=20)
-ax1.set_title("Population vector decoder",fontsize=30,y=1.08)
-
-
-"""
-Same as above but linear coordinate systems:
-"""
-fig=plt.figure()
-plt.xticks([])
-plt.yticks([])
-plt.box(False)
-
-ax1=fig.add_subplot(1,2,1)
-ax1.plot(np.linspace(0,359,360),mlkap,color="magenta",label="Maximum likelihood",linewidth=3)
-ax1.plot(np.linspace(0,359,360),pvkap,color="green",label="Population vector decoder",linewidth=3)
-ax1.set_xticks(np.linspace(0,360,9))
-ax1.xaxis.set_major_locator(MultipleLocator(90))
-ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-ax1.xaxis.set_minor_locator(MultipleLocator(45))
-ax1.tick_params(axis='both', which='major', labelsize=20)
-ax1.set_ylim([0,2.1])
-ax1.set_title("Kappa distribution",fontsize=30)
-
-ax2=fig.add_subplot(1,2,2)
-ax2.plot(np.linspace(0,359,360),mldep,color="magenta",label="Maximum likelihood",linewidth=3)
-ax2.plot(np.linspace(0,359,360),pvdep,color="green",label="Population vector decoder",linewidth=3)
-ax2.tick_params(axis='both', which='major', labelsize=20)
-ax2.set_xticks(np.linspace(0,360,9))
-ax2.xaxis.set_major_locator(MultipleLocator(90))
-ax2.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-ax2.xaxis.set_minor_locator(MultipleLocator(45))
-ax2.set_yticks(np.linspace(0,0.6,7))
-ax2.set_title("Surround modulation strength",fontsize=30)
-ax1.legend(loc="best",prop={'size':20})
-mng = plt.get_current_fig_manager()
-mng.window.state("zoomed")
-plt.pause(0.1)
-plt.subplots_adjust(left=0.05, bottom=0.07, right=0.99, top=0.94, wspace=0.11, hspace=0.28)
-plt.savefig(path+"\\dep_kap_plots.pdf")
-#USE TOTAL AREA NORMALIZED VECSUM
-
-"""
-Depmod distribution plots for center-only uniform models
-"""
-mlbestcuni=mlParamscuni[mlindcuni[0]]
-pvbestcuni=popVecParams[popvecindcuni[0]]
-
-mldepcuni=dep_vals([mlbestcuni["depb"],mlbestcuni["depu"]],mlbestcuni["phase"])
-pvdepcuni=dep_vals([pvbestcuni["depb"],pvbestcuni["depu"]],pvbestcuni["phase"])
-
-fig=plt.figure()
-plt.xticks([])
-plt.yticks([])
-ax1=fig.add_subplot(1,1,1)
-ax1.plot(np.linspace(0,359,360),mldepcuni,color="magenta",label="Maximum likelihood",linewidth=3)
-ax1.plot(np.linspace(0,359,360),pvdepcuni,color="green",label="Population vector decoder",linewidth=3)
-ax1.set_xticks(np.linspace(0,360,9))
-ax1.xaxis.set_major_locator(MultipleLocator(90))
-ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-ax1.xaxis.set_minor_locator(MultipleLocator(45))
-ax1.tick_params(axis='both', which='major', labelsize=20)
-ax1.set_yticks(np.linspace(0,0.8,9))
-ax1.set_title("Surround modulation strength",fontsize=30)
-ax1.legend(loc="best",prop={'size':20})
-mng = plt.get_current_fig_manager()
-mng.window.state("zoomed")
-plt.pause(0.1)
-plt.subplots_adjust(left=0.04, bottom=0.05, right=0.99, top=0.93, wspace=0.11, hspace=0.28)
-
-
-
 
 """
 THE FIT INDICES APART FROM RMSEA

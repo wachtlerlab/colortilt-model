@@ -9,6 +9,7 @@ Created on Sat Aug 10 14:06:49 2019
 Figure reproduction for thesis (cooler more formal etc with legends for all figures, also each figure is named accordingly)
 Each figure in the thesis is commented in the beginning. Figures are commented out, so the codes of the figure which is wished to be created
 should be first chosen to run.
+A good idea is to transfer this script over to colclass, so it is easily called anyhow you want from any script you want.
 """
 
 import numpy as np
@@ -79,7 +80,7 @@ plt.subplots_adjust(left=0.08, bottom=0.1, right=0.75, top=0.88, wspace=0.47, hs
 
 """
 figure supplement 1
-The realtionship between kappa nad standard deviation for a huge and small kappa interval.
+The realtionship between kappa and standard deviation for a huge and small kappa interval.
 """
 """
 x=np.linspace(-np.pi,np.pi,num=100*2*np.pi+1)
@@ -266,6 +267,7 @@ data_params.py was used
 """
 Figure 9: tuning curves of the best model as a function of surround
 TO DO: Add in the middle of S4 the pop act. without surround for comparison. DONE
+TO DO: Add labeling Done
 """
 """
 fig=plotter.plot_template(auto=True)
@@ -318,7 +320,7 @@ plt.savefig(path+"\\tuning_curves_best_model.pdf")
 
 """
 Supplementary figure 4: the best fit model population activity without surround
-Added into the middle subplot of figure 9
+Added into the middle subplot of figure 9 Done
 """
 """
 plt.figure()
@@ -403,6 +405,8 @@ Barplot figure for best model RMS, done in data_params.py
 """
 Kappa and depmod distribution for different surround conditions.
 Done in data_params.py both linear and polar versions
+
+ALSO a version available in data_params.py where RMS and linear dep kap plots are collapsed together.
 """
 
 
@@ -410,10 +414,12 @@ Done in data_params.py both linear and polar versions
 Tuning curves of the best model as a function of surround (same as manuscript tuning curves of the best fitting model which is for ml,
 but this one is for popvec)
 Do this for uniform & center-only uniform ml and popvec plots. 
+Label is string for the manuscript figures
 """
 """
-def tuning_curve_plotter(*args,**kwargs):
+def tuning_curve_plotter(label,*args,**kwargs):
     fig=plotter.plot_template(auto=True)
+    fig.text(0.05,0.95,label,fontsize=30)
     fig.text(0.355,0.39,"225",size=20)
     fig.text(0.504,0.39,"270",size=20)
     fig.text(0.675,0.39,"315",size=20)
@@ -458,12 +464,13 @@ def tuning_curve_plotter(*args,**kwargs):
     plt.subplots_adjust(left=0.08, bottom=0.12, right=0.98, top=1, wspace=0.16, hspace=0.20)
     mng = plt.get_current_fig_manager()
     mng.window.state("zoomed")
-    return
+    return 
+
 def saver():
     q1=input("Wanna save?\n")
     while q1=="yes":
         q2=input("Please type the figure name.\n")
-        plt.savefig(path+"\\"+q2+".pdf")
+        plt.savefig(path+"\\new\\"+q2+".pdf")
         print("saved.")
         q1="no"
     return
@@ -477,13 +484,13 @@ saver()
 #pvuni
 tuning_curve_plotter(2.3,2.0999999999999996,0.6000000000000001)
 saver()
-#pvcuni
-tuning_curve_plotter(1,2.3,1,stdInt=[1.8,1.8],bwType="gradient/sum",phase=22.5,depInt=[0.4,0.6],depmod=True,stdtransform=False)
+#pvcuni best mdoel of pv
+tuning_curve_plotter("B",1,2.3,1,stdInt=[1.8,1.8],bwType="gradient/sum",phase=22.5,depInt=[0.4,0.6],depmod=True,stdtransform=False)
 saver()
 #mlbestmod
-tuning_curve_plotter(1,2.3,1,stdInt=[1.2,0.9],bwType="gradient/sum",phase=22.5,depInt=[0.2,0.3999999999999999],depmod=True,stdtransform=False)
+tuning_curve_plotter("A",1,2.3,1,stdInt=[1.2,0.9],bwType="gradient/sum",phase=22.5,depInt=[0.2,0.3999999999999999],depmod=True,stdtransform=False)
 saver()
-#pvbestmod
+#pvnonunif
 tuning_curve_plotter(1,2.3,1,stdInt=[2,1.9],bwType="gradient/sum",phase=22.5,depInt=[0.4,0.6],depmod=True,stdtransform=False)
 saver()
 """
