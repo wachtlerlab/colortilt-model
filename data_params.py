@@ -41,6 +41,23 @@ def file_opener(dataName,rmsThres):
     fltrms, fltind=zip(*sorted(zip(fltrms,fltind)))#sort fltind and fltrms values in the same ascending order 
     return paraml, meanrms, fltrms, fltind, outind
 
+def combine_scans(nuni,cuni,uni,nunirms,cunirms,unirms):
+#Combine different model scans together, nuni is non uniform, cuni center only uniform and uni uniform model
+#First three variables are scan dictionary lists, last 3 are mean rms values
+    for i in range(0,len(uni)):
+        dep=uni[i]["depval"]
+        k=np.round(uni[i]["kci"],1)
+        uni[i].update({"depb":dep,"depu":dep,"kb":k,"ku":k})
+        del(uni[i]["depval"])    
+        del(uni[i]["kci"])
+    rmslist=nunirms+cunirms+unirms#all rms values coaggulated together in the order of nuni,cuni,uni
+    dictilist=nuni+cuni+uni#all scan dictionaries concatanated in nuni cuni uni order
+    indexlist=np.arange(0,len(dictilist))#index list of the dictionary list, used to order rms from small to big values
+                                         #without losing the track of the scan parameter set in dictionary list
+                                         #NOTE that here index list encompasses everything
+    rmslist1,indexlist=zip(*sorted(zip(rmslist,indexlist)))
+    return dictilist,rmslist,indexlist
+
 
 """
 Histogram of the parameter distribution. FIGURE 6
@@ -50,15 +67,22 @@ popvec
 """
 popVecParams,popVecRms,popvecflt,popvecind,popvecout=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-01-25_nocorr",4.5)
 popVecParamsmf,popVecRmsmf,popvecfltmf,popvecindmf,popvecoutmf=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-01-25_nocorr_maxnorm",4.5)
-popVecParamsuni,popVecRmsuni,popvecfltuni,popvecinduni,popvecoutuni=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-02-14_nocorr_uni",4.5)
-popVecParamscuni,popVecRmscuni,popvecfltcuni,popvecindcuni,popvecoutcuni=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-02-14_nocorr_unicent",4.5)
+popVecParamsuni,popVecRmsuni,popvecfltuni,popvecinduni,popvecoutuni=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-04-17_nocorr_uni",4.5)
+popVecParamscuni,popVecRmscuni,popvecfltcuni,popvecindcuni,popvecoutcuni=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-04-17_nocorr_unicent",4.5)
 
 """
 ml
 """
 mlParams,mlRms,mlflt,mlind,mlout=file_opener("paraml_fit_10_decoder_ml_errType_rms_2019-08-23",4)
-mlParamsuni,mlRmsuni,mlfltuni,mlinduni,mloutuni=file_opener("paraml_fit_10_decoder_ml_errType_rms_2020-02-14_uni",4.5)
-mlParamscuni,mlRmscuni,mlfltcuni,mlindcuni,mloutcuni=file_opener("paraml_fit_10_decoder_ml_errType_rms_2020-02-15_unicent",4.5)
+mlParamsuni,mlRmsuni,mlfltuni,mlinduni,mloutuni=file_opener("paraml_fit_10_decoder_ml_errType_rms_2020-04-17_uni",4.5)
+mlParamscuni,mlRmscuni,mlfltcuni,mlindcuni,mloutcuni=file_opener("paraml_fit_10_decoder_ml_errType_rms_2020-04-17_unicent",4.5)
+
+"""
+Totally combined lists
+"""
+popVecParamstot,popVecRmstot,popvecindtot=combine_scans(popVecParams,popVecParamscuni,popVecParamsuni,popVecRms,popVecRmscuni,popVecRmsuni)
+mlParamstot,mlRmstot,mlindtot=combine_scans(mlParams,mlParamscuni,mlParamsuni,mlRms,mlRmscuni,mlRmsuni)
+
 
 
 #mlParamsskm,mlRmsskm,mlfltskm,mlindskm,mloutskm=file_opener("paraml_fit_7_decoder_ml_errType_rms_2020-02-22_surkap_modulated_ksurphase_112.5",4)#surround kappa modulated scan
@@ -83,13 +107,12 @@ plt.ylabel("Number of models",fontsize=15)
 plt.xticks(np.arange(3.7,7.6,0.2),)
 plt.tick_params(axis='both', which='major', labelsize=15)
 
-def param_calculator(paraml,fltind,outind,rmslist,rmsThres,dataPlot=False,deco="ml",paraml2=None,fltind2=None,datDict=None,speplot=False,unimod=False,bwType="gradient/sum",bwType2="gradient/sum",label=None,nonunif=True):
+def param_calculator(paraml,fltind,outind,rmslist,rmsThres,dataPlot=False,deco="ml",paraml2=None,fltind2=None,datDict=None,speplot=False,unimod=False,bwType="gradient/sum",bwType2="gradient/sum",label=None):
     #paraml2 for deco=="both", that 2nd colmod model is created for the other decoder (1st ml, 2nd vecsum)
     #speplot: use to specify the model you want to plot (based on the index entry)
     #unimod: use to specify if plotted model is uniform or non-uniform (for uniform model the dictionary has to be slightly different)
     #bwType is for 1st model, bwType2 only when bothdec 
     #label is for putting labels on the color coded parameter space plot
-    #nonunif is a binary variable, if True, then it is nonuniform model, else it is for now center only uniform model, so that 
     #for the parameter plot the number of subplots can be reduced to a considerable amount.
     """
     Calculate average center BW, min-max center BW difference, average sur mod depth, min-max sur mod depth by using following parameters:
@@ -251,40 +274,21 @@ def param_calculator(paraml,fltind,outind,rmslist,rmsThres,dataPlot=False,deco="
         plt.yticks([])
         plt.box(False)
         
-        if nonunif==True:
-            for j in range(0,4):
-                x=plotdict[params[j]]
-                for k in range(1,5):
-                    if j>=k:
-                        continue
-                    y=plotdict[params[k]]
-                    i=i+1
-                    ax=fig2.add_subplot(3,4,i)
-                    a=ax.scatter(x,y,c=np.array(rmslist),cmap='jet')
-                    ax.set_title('x=%s , y=%s'%(params[j],params[k]),fontdict={'fontsize': 15, 'fontweight': 'medium'})
-                    ax.tick_params(axis='both', which='major', labelsize=15)
-            colbar=plt.colorbar(a,extend="max")
-            a.set_clim(np.round(min(rmslist)-0.05,1),np.round(min(rmslist)+0.6,1))
-            colbar.ax.tick_params(labelsize=15)
-            plt.subplots_adjust(left=0.05, bottom=0.05, right=0.99, top=0.89, wspace=0.2, hspace=0.39)
-        else:
-            params.remove("cBWd")
-            for j in range(0,3):
-                x=plotdict[params[j]]
-                for k in range(1,4):
-                    if j>=k:
-                        continue
-                    y=plotdict[params[k]]
-                    i=i+1
-                    ax=fig2.add_subplot(2,3,i)
-                    a=ax.scatter(x,y,c=np.array(rmslist),cmap='jet')
-                    ax.set_title('x=%s , y=%s'%(params[j],params[k]),fontdict={'fontsize': 15, 'fontweight': 'medium'})
-                    ax.tick_params(axis='both', which='major', labelsize=15)
-            colbar=plt.colorbar(a,extend="max")
-            a.set_clim(np.round(min(rmslist)-0.05,1),np.round(min(rmslist)+0.6,1))
-            colbar.ax.tick_params(labelsize=15)
-            plt.subplots_adjust(left=0.05, bottom=0.05, right=0.99, top=0.89, wspace=0.2, hspace=0.39)
-
+        for j in range(0,4):
+            x=plotdict[params[j]]
+            for k in range(1,5):
+                if j>=k:
+                    continue
+                y=plotdict[params[k]]
+                i=i+1
+                ax=fig2.add_subplot(3,4,i)
+                a=ax.scatter(x,y,c=np.array(rmslist),cmap='jet',edgecolors="none",s=10)
+                ax.set_title('x=%s , y=%s'%(params[j],params[k]),fontdict={'fontsize': 15, 'fontweight': 'medium'})
+                ax.tick_params(axis='both', which='major', labelsize=15)
+        colbar=plt.colorbar(a,extend="max")
+        a.set_clim(np.round(min(rmslist)-0.05,1),np.round(min(rmslist)+0.6,1))
+        colbar.ax.tick_params(labelsize=15)
+        plt.subplots_adjust(left=0.05, bottom=0.05, right=0.99, top=0.89, wspace=0.2, hspace=0.39)
     """
     Look at the filtered model fits with waitforbuttonpress 
     NOTE: this code should be stopped after a while, as it will go through each and every model in the uploaded file.
@@ -413,6 +417,8 @@ def param_calculator(paraml,fltind,outind,rmslist,rmsThres,dataPlot=False,deco="
     else:
         return
 
+"""
+THESE ARE KIND OF OBSOLETE NOW; USE THE TOTAL COMBNED LIST
 bothdec=param_calculator(mlParams,mlind,mlout,mlRms,4.5,deco="both",dataPlot=True,paraml2=popVecParams,fltind2=popvecind)
 bothdec2=param_calculator(mlParams,mlind,mlout,mlRms,4.5,deco="both",dataPlot=True,paraml2=popVecParamsmf,fltind2=popvecindmf,bwType2="gradient/max")
 
@@ -421,6 +427,10 @@ bothdecbest=param_calculator(mlParams,mlind,mlout,mlRms,4.5,deco="both",dataPlot
 #Best models
 mldec=param_calculator(mlParams,mlind,mlout,mlRms,4,deco="ml",dataPlot=True,label="A")
 pvcuni=param_calculator(popVecParamscuni,popvecindcuni,popvecoutcuni,popVecRmscuni,4.5,deco="vecsum",dataPlot=True,bwType="gradient/sum",label="B",nonunif=False)
+"""
+mltot=param_calculator(mlParamstot,mlindtot,mlout,mlRmstot,4,deco="ml",dataPlot=True,label="A")#mlout now unnecessary parameter which has no effect so leave it be
+pvtot=param_calculator(popVecParamstot,popvecindtot,popvecoutcuni,popVecRmstot,4.5,deco="vecsum",dataPlot=True,bwType="gradient/sum",label="B")
+#!!!PLOTS LOOK UGLY; REDO THE UNI AND CUNI SCANS WITH EXACTLY THE SAME PARAMETER SCAN SPACE
 
 #Other considerations
 pvsum=param_calculator(popVecParams,popvecind,popvecout,popVecRms,4.5,deco="vecsum",dataPlot=True)
@@ -480,12 +490,12 @@ data=json.load(file)
 """
 Best model different decoders RMS plots relative to different surrounds
 """
-mlbestRMS=mlParams[mlind[0]]["dif"]
-pvbestRMS=popVecParamscuni[popvecindcuni[0]]["dif"]
+mlbestRMS=mlParamstot[mlindtot[0]]["dif"]
+pvbestRMS=popVecParamstot[popvecindtot[0]]["dif"]
 plt.figure()
 ax=plt.subplot(111)
-ax.bar(np.array(list(mlbestRMS.keys()))-2.5,list(mlbestRMS.values()), width=5, color="magenta", align="center",label="Maximum likelihood")
-ax.bar(np.array(list(mlbestRMS.keys()))+2.5,list(pvbestRMS.values()), width=5, color="green", align="center",label="Population vector")
+ax.bar(np.array(list(mlbestRMS.keys()))-3,list(mlbestRMS.values()), width=5, edgecolor="magenta",color="None", align="center",label="Maximum likelihood",linewidth=3)
+ax.bar(np.array(list(mlbestRMS.keys()))+3,list(pvbestRMS.values()), width=5, edgecolor="green",color="None", align="center",label="Population vector",linewidth=3)
 ax.tick_params(axis='both', which='major', labelsize=25)
 ax.set_xticks(np.linspace(0,315,8))
 ax.set_xlabel("Surround hue angle [°]",fontsize=30)
@@ -516,8 +526,8 @@ def dep_vals(depInt,phase):
         depval.append(depth_modulator(depInt,i,phase))
     return depval
 
-mlbest=mlParams[mlind[0]]
-pvbest=popVecParams[popvecind[0]]
+mlbest=mlParamstot[mlindtot[0]]
+pvbest=popVecParamstot[popvecindtot[0]]
 pvbestmf=popVecParamsmf[popvecindmf[0]]
 
 mlkap=kappa_vals(mlbest["ku"],mlbest["kb"],mlbest["phase"])
@@ -527,6 +537,9 @@ pvkapmf=kappa_vals(pvbestmf["ku"],pvbestmf["kb"],pvbestmf["phase"])
 mldep=dep_vals([mlbest["depb"],mlbest["depu"]],mlbest["phase"])
 pvdep=dep_vals([pvbest["depb"],pvbest["depu"]],pvbest["phase"])
 pvdepmf=dep_vals([pvbestmf["depb"],pvbestmf["depu"]],pvbestmf["phase"])
+
+mlbestRMS=mlbest["dif"]
+pvbestRMS=pvbest["dif"]
 
 fig=plt.figure()
 plt.title("Kappa distribution",fontsize=30,y=1.08)
@@ -650,8 +663,8 @@ fig.text(0.08,0.43,"B",fontsize=20)
 fig.text(0.57,0.43,"C",fontsize=20)
 
 #RMS PLOT
-ax1.bar(np.array(list(mlbestRMS.keys()))-2.5,list(mlbestRMS.values()), width=5, color="magenta", align="center",label="Maximum likelihood")
-ax1.bar(np.array(list(mlbestRMS.keys()))+2.5,list(pvbestRMS.values()), width=5, color="green", align="center",label="Population vector")
+ax1.bar(np.array(list(mlbestRMS.keys()))-3,list(mlbestRMS.values()), width=5, edgecolor="magenta",color="None", align="center",label="Maximum likelihood",linewidth=3)
+ax1.bar(np.array(list(mlbestRMS.keys()))+3,list(pvbestRMS.values()), width=5, edgecolor="green",color="None", align="center",label="Population vector",linewidth=3)
 ax1.tick_params(axis='both', which='major', labelsize=15)
 ax1.set_xticks(np.linspace(0,315,8))
 ax1.set_xlabel("Surround hue angle [°]",fontsize=20)

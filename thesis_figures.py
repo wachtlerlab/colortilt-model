@@ -709,9 +709,9 @@ ax3=fig.add_subplot(2,3,3)
 ax4=fig.add_subplot(2,3,5)
 ax5=fig.add_subplot(2,3,6)
 
+fig.text(0.36,0.965,"B",fontsize=20)
+fig.text(0.69,0.965,"C",fontsize=20)
 ax1.text(-182,15.7,"A",fontsize=20)
-ax2.text(1,4.7,"B",fontsize=20)
-ax3.text(1,4.7,"C",fontsize=20)
 
 try:
     col1;dec1v;dec1vm;dec1m;dec1mf

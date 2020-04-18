@@ -98,7 +98,7 @@ for i in range(0,360,45):
     if i==315:
         print("all ok, ready to roll with cfi")
 
-def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",deco="ml",dicti=dictTot,se=True,errN=False,bwType="gradient/sum",KsurInt=None,ksurphase=None,kcentphase=None):
+def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",deco="ml",dicti=dictTot,se=True,errN=False,bwType="gradient/sum",KsurInt=[None],ksurphase=None,kcentphase=None):
     """
     Data fit function:
         Checks the fit quality of the model with given parameters to the psychophysics data by using the given error estimation method.
@@ -237,7 +237,7 @@ def data_dist(Kcent,Ksur,maxInh,stdInt,depInt,fitThres,phase=22.5,errType="rms",
             modelfit=True
     return rs,modelfit
 
-def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",deco="ml",dicti="dictTot",se=True,errN=False,bwType="gradient/sum",kci=None,depval=None,ckapun=False,KsurInt=None,KsurStep=None,ksurphase=None,kcentphase=None):
+def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",deco="ml",dicti="dictTot",se=True,errN=False,bwType="gradient/sum",kci=None,depval=None,ckapun=False,KsurInt=[None],KsurStep=None,ksurphase=None,kcentphase=None):
     """Parameter scan function:
         This function uses the data_dist() function to scan through all parameter combinations given in the function. Warning: The scanning
         process takes long time, in some cases even days. 
@@ -284,7 +284,7 @@ def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",de
         kc=1#Kcent is arbitrary as the model is non-uniform!
         maxInh=1#these 2 parameters irrelevant, they dont do any job here!
         params=[]
-        if KsurInt!=None:
+        if KsurInt[0]!=None:
             ksi=[1]#if surround kappa is modulated, this loop is done once.
         else:
             pass
@@ -320,7 +320,7 @@ def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",de
                                     b=0
                                     break 
                             
-                                if KsurInt!=None:
+                                if KsurInt[0]!=None:
                                         print("surround kappa modulated")
                                         for q in range(0,100):
                                             sku=-KsurStep*q+KsurInt[0]#surround kappa upper value
@@ -345,6 +345,8 @@ def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",de
                                     if modfit==True:
                                         moddict={}
                                         moddict.update({"depb":depb,"depu":depu,"kb":kb,"ku":ku,"ksi":ksi[i],"phase":phase,"dif":dif})
+                                        print("fit params work for each of the surround for given rms threshold")
+                                        params.append(moddict)
                                     scannum=scannum+1
         print(scannum)
         return params
@@ -356,7 +358,7 @@ def scan_params(fit,ksi,kbs,kus,depbs,depus,kstep,depstep,phInt,errType="rms",de
             for m in range(0,len(kci)):
                 for j in range(0,len(depval)):
                     print("ckappa=%s,skappa=%s,maxinh=%s"%(kci[m],ksi[i],depval[j]))#The model parameters
-                    dif,dec=data_dist(kci[m],ksi[i],depval[j],stdInt=stdInt,depInt=depInt,fitThres=fit,errType=errType,phase=phase,deco=deco,dicti=dicti,se=se,errN=errN,bwType=bwType)#fit value and decoder list
+                    dif,modfit=data_dist(kci[m],ksi[i],depval[j],stdInt=stdInt,depInt=depInt,fitThres=fit,errType=errType,phase=phase,deco=deco,dicti=dicti,se=se,errN=errN,bwType=bwType)#fit value and decoder list
                     if modfit==True:
                         print("fit params work for each of the surround for given rms threshold")
                         params.append({"kci":kci[m],"ksi":ksi[i],"depval":depval[j],"dif":dif})
@@ -492,13 +494,13 @@ pickle.dump(paraml, f)
 Uniform model scan for both decoder types, should be pretty fast as only 3 parameters and expected is worsened fit.
 """
 fit=10;errType="rms";date=date.today();decod="ml";bwType="regular"#These values are used to specify the pickle file name. date.today() gives the date of today in a pretty straightforward way.
-ksi=np.linspace(1.0,2.3,14);kci=np.linspace(0.5,2.5,11);depval=np.linspace(0,1,6);kbs=None ;kus=None ;depbs=None ;depus=None ;kstep=None ;depstep=None ;phInt=None
+ksi=np.linspace(0.1,2.3,10);kci=list(np.arange(0.5,2,0.2))+[2];depval=np.linspace(0,1,6);kbs=None ;kus=None ;depbs=None ;depus=None ;kstep=None ;depstep=None ;phInt=None
 paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod,kci=kci,depval=depval,bwType=bwType)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
 f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_uni.pckl'%(fit,decod,errType,date), 'wb')#no decoder correction
 pickle.dump(paraml, f)
 
 
-decod="vecsum" #the scan is run for 14.02.2019
+decod="vecsum" 
 paraml=scan_params(fit,ksi=ksi,kbs=kbs,kus=kus,depbs=depbs,depus=depus,kstep=kstep,depstep=depstep,errType=errType,phInt=phInt,deco=decod,kci=kci,depval=depval,bwType=bwType)#threshold=10, run it once, do the hist and LOOK AT THE FITTED CURVES FOR ALL CASES, if they reproduce the data mechanistically, all is well, do the subplot for the best fits.
 f = open(sp+'\\paraml_fit_%s_decoder_%s_errType_%s_%s_%s_uni.pckl'%(fit,decod,errType,date,"nocorr"), 'wb')#no decoder correction
 pickle.dump(paraml, f)
