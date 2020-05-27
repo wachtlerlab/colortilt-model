@@ -27,7 +27,7 @@ path=pathes.figpath
 decoder labels/colors, this labeling is used for all figures for consistency.
 """
 labs=["population vector","von Mises fit","maximum likelihood","maximum fire rate"]
-colors=["green","teal","magenta","brown"]
+colors=["green","blue","magenta","brown"]
 """
 figure supplement 2
 Uniform model surround modulation and tuning curves before and after surround supression
@@ -709,7 +709,7 @@ ax3=fig.add_subplot(2,3,3)
 ax4=fig.add_subplot(2,3,5)
 ax5=fig.add_subplot(2,3,6)
 
-fig.text(0.36,0.965,"B",fontsize=20)
+fig.text(0.415,0.965,"B",fontsize=20)
 fig.text(0.69,0.965,"C",fontsize=20)
 ax1.text(-182,15.7,"A",fontsize=20)
 
@@ -772,7 +772,7 @@ ax3.set_ylim([-6,6])
 
 
 labs=["population vector","von Mises fit","maximum likelihood"]
-colors=["green","teal","magenta"]
+colors=["green","blue","magenta"]
 sumdecs=["vssum","vmsum","mlsum"]
 frdecs=["vsfr","vmfr","mlfr"]
 for i in range(0,3):

@@ -24,6 +24,7 @@ from mpl_toolkits.mplot3d import Axes3D
 path=col.pathes.figpath
 from datetime import date
 from scipy.stats import chi2 as chisq
+import plotly.express as px
 
 dictTot=pickle.load(open("dicttot.pckl","rb"))#Dictionary of the subject average.
 date=date.today()
@@ -76,6 +77,7 @@ ml
 mlParams,mlRms,mlflt,mlind,mlout=file_opener("paraml_fit_10_decoder_ml_errType_rms_2019-08-23",4)
 mlParamsuni,mlRmsuni,mlfltuni,mlinduni,mloutuni=file_opener("paraml_fit_10_decoder_ml_errType_rms_2020-04-17_uni",4.5)
 mlParamscuni,mlRmscuni,mlfltcuni,mlindcuni,mloutcuni=file_opener("paraml_fit_10_decoder_ml_errType_rms_2020-04-17_unicent",4.5)
+mlParamsmf,mlRmsmf,mlfltmf,mlindmf,mloutmf=file_opener("paraml_fit_10_decoder_ml_errType_rms_phase=22.5_maxfr_2020-05-26",4)
 
 """
 Totally combined lists
@@ -254,7 +256,7 @@ def param_calculator(paraml,fltind,outind,rmslist,rmsThres,dataPlot=False,deco="
         """
         """
         Due to colormapping, some parts will be unnecessary, like filtering data (out ind) etc.
-        
+        LAST PLOT HAS A MISTAKE ON COLOR CODE!!! SOMEHOW ONLY THE LAST ONE, something wrong in loop? nope all good now!
         scheme:
         fig=plt.figure()
         ax=plt.subplot(4,1,1)
@@ -282,11 +284,12 @@ def param_calculator(paraml,fltind,outind,rmslist,rmsThres,dataPlot=False,deco="
                 y=plotdict[params[k]]
                 i=i+1
                 ax=fig2.add_subplot(3,4,i)
-                a=ax.scatter(x,y,c=np.array(rmslist),cmap='jet',edgecolors="none",s=10)
+                a=ax.scatter(x,y,c=np.array(rmslist),cmap='coolwarm',edgecolors="none",s=10)
+                a.set_clim(4.5-0.8,4.5+0.8)
+                #ax.set_facecolor("whitesmoke")
                 ax.set_title('x=%s , y=%s'%(params[j],params[k]),fontdict={'fontsize': 15, 'fontweight': 'medium'})
                 ax.tick_params(axis='both', which='major', labelsize=15)
         colbar=plt.colorbar(a,extend="max")
-        a.set_clim(np.round(min(rmslist)-0.05,1),np.round(min(rmslist)+0.6,1))
         colbar.ax.tick_params(labelsize=15)
         plt.subplots_adjust(left=0.05, bottom=0.05, right=0.99, top=0.89, wspace=0.2, hspace=0.39)
     """
@@ -1254,6 +1257,63 @@ plt.pause(0.1)
 plt.subplots_adjust(left=0.06, bottom=0.12, right=0.99, top=0.94, wspace=0, hspace=0)
 plt.savefig(path+"\\rms_error_ml_pv_uni_nonuni_cuni.pdf")
 
+
+
+"""
+COMPARE THE VECSUM ERRORS BETWEEN MAXFR VS TOTAREA NORMALIZATION:
+"""
+def vecsum_error_comparison(ksi,phInt,kus,kbs,kstep):#WRONG, take the absolute error all the time!!!
+    #ADDITIONALLY; THE SURROUND IS UTTERLY IRRELEVANT YOU HAVE NO SUPPRESSION IBRAHIM WTF!
+    #MODDEPBEL AND MODDEPUP AS WELLL UGHHHHH as no surround modulation
+    #compare vecsum decoding errors for maxfr vs totarea, firstly modelfit values, not all and take average over all surrounds for each decoder and do a scatterplot
+    meanlisttotar=[]#mean decoding bias in degrees for the models
+    meanlistmaxact=[]
+    scannum=0
+    for i in range(0,len(ksi)):#From here on, each parameter is scanned as a nested loop, so each parameter combination can be considered
+        for m in range(0,len(phInt)):
+            phase=phInt[m]
+            for j in range(0,100):
+                ku=-kstep*j+kus
+                for k in range(0,100):
+                    kb=kstep*k+kbs
+                    if kb>=ku:
+                        break
+                    print("kbel=%s,kup=%s,ksur=%s,phase=%s"%(kb,ku,ksi[i],phase))#The model parameters
+                    #the models, surround 180 as any surround goes (irrelevant for us what surround)
+                    modtotarea = col.colmod(None,ksi[i],None,stdInt=[ku,kb],bwType="gradient/sum",phase=phInt[m],depmod=True,stdtransform=False)
+                    modmaxfr = col.colmod(None,ksi[i],None,stdInt=[ku,kb],bwType="gradient/max",phase=phInt[m],depmod=True,stdtransform=False)
+                    vstotarea = col.decoder.vecsum(modtotarea.x,modtotarea.centery,modtotarea.unitTracker,dataFit=True)
+                    vsmaxfr = col.decoder.vecsum(modmaxfr.x,modmaxfr.centery,modmaxfr.unitTracker,dataFit=True)
+                    biastotarea = np.mean(abs(np.array(list(vstotarea.angShift))))
+                    biasmfr = np.mean(abs(np.array(list(vsmaxfr.angShift))))
+                    print(biastotarea,biasmfr)
+                    meanlisttotar.append(biastotarea)
+                    meanlistmaxact.append(biasmfr)
+                    scannum=scannum+1
+                    print(scannum)
+    return meanlisttotar,meanlistmaxact
+
+ksur = np.linspace(0.1,2.3,10)
+kbs,kus = 0.5,2
+delta = 0.2
+phInt=np.linspace(0,157.5,8)
+                               
+biastotar,biasmaxact=vecsum_error_comparison(ksur,phInt,kus,kbs,delta)
+sp=col.pathes.scanpath
+g = open(sp+'\\popvec_decobias_maxfr_vs_totact_phase_%s_%s.pckl'%(phInt,date),'wb')#no decoder correction
+pickle.dump([biastotar,biasmaxact], g)
+plt.figure()
+plt.plot(biastotar,biasmaxact,".",color="black")                               
+plt.plot([0,6],[0,6],'--',color="gray")
+plt.xlabel("Total area normalized",size=20)
+plt.ylabel("Maximum activity normalized",size=20)
+plt.title("Population vector decoding bias comparison",size=30)
+plt.xticks(size=20)
+plt.yticks(size=20)
+mng = plt.get_current_fig_manager()
+mng.window.state("zoomed")
+plt.savefig(path+"\\new\\popvec_decoding_bias_comparison.pdf")
+
 """
 THE FIT INDICES APART FROM RMSEA
 #TODO: Rearrange all the code (null model stuff etc.), mostly done
@@ -1506,7 +1566,7 @@ pvnunbic2=np.sum(pvchinun)+np.log(obsnum)*pvparamNun
 #BIC_model=sqrt(chi_sq(model error))+ln(T)*k (T:# of observations) TRY WITH CHI SQUARE
 
 """
-BIC for nested models
+BIC for nested models NOT USEFUL FOR MY CASE AS THIS ALSO NOT APPLICABLE FOR NESTED MODELS!!!
 """
 #ML
 bicuncun=np.sum(mlchiun)-np.sum(mlchicun)-np.log(obsnum)*(mlparamCun-mlparamUn)
