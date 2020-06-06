@@ -46,11 +46,17 @@ def combine_scans(nuni,cuni,uni,nunirms,cunirms,unirms):
 #Combine different model scans together, nuni is non uniform, cuni center only uniform and uni uniform model
 #First three variables are scan dictionary lists, last 3 are mean rms values
     for i in range(0,len(uni)):
-        dep=uni[i]["depval"]
-        k=np.round(uni[i]["kci"],1)
-        uni[i].update({"depb":dep,"depu":dep,"kb":k,"ku":k})
-        del(uni[i]["depval"])    
-        del(uni[i]["kci"])
+        try:
+            dep=uni[i]["depval"]
+            k=np.round(uni[i]["kci"],1)
+            uni[i].update({"depb":dep,"depu":dep,"kb":k,"ku":k})
+        except KeyError:
+            pass
+        try:
+            del(uni[i]["depval"])    
+            del(uni[i]["kci"])
+        except KeyError:
+            pass
     rmslist=nunirms+cunirms+unirms#all rms values coaggulated together in the order of nuni,cuni,uni
     dictilist=nuni+cuni+uni#all scan dictionaries concatanated in nuni cuni uni order
     indexlist=np.arange(0,len(dictilist))#index list of the dictionary list, used to order rms from small to big values
@@ -70,7 +76,6 @@ popVecParams,popVecRms,popvecflt,popvecind,popvecout=file_opener("paraml_fit_10_
 popVecParamsmf,popVecRmsmf,popvecfltmf,popvecindmf,popvecoutmf=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-01-25_nocorr_maxnorm",4.5)
 popVecParamsuni,popVecRmsuni,popvecfltuni,popvecinduni,popvecoutuni=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-04-17_nocorr_uni",4.5)
 popVecParamscuni,popVecRmscuni,popvecfltcuni,popvecindcuni,popvecoutcuni=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-04-17_nocorr_unicent",4.5)
-
 """
 ml
 """
@@ -85,6 +90,11 @@ Totally combined lists
 popVecParamstot,popVecRmstot,popvecindtot=combine_scans(popVecParams,popVecParamscuni,popVecParamsuni,popVecRms,popVecRmscuni,popVecRmsuni)
 mlParamstot,mlRmstot,mlindtot=combine_scans(mlParams,mlParamscuni,mlParamsuni,mlRms,mlRmscuni,mlRmsuni)
 
+"""
+Same combination by using the maxact normalized scans (note that normalization is only matter of nonunif model as other models have same center bw!)
+"""
+popVecParamsmftot,popVecRmsmftot,popvecindmftot=combine_scans(popVecParamsmf,popVecParamscuni,popVecParamsuni,popVecRmsmf,popVecRmscuni,popVecRmsuni)
+mlParamsmftot,mlRmsmftot,mlindmftot=combine_scans(mlParamsmf,mlParamscuni,mlParamsuni,mlRmsmf,mlRmscuni,mlRmsuni)
 
 
 #mlParamsskm,mlRmsskm,mlfltskm,mlindskm,mloutskm=file_opener("paraml_fit_7_decoder_ml_errType_rms_2020-02-22_surkap_modulated_ksurphase_112.5",4)#surround kappa modulated scan
@@ -336,7 +346,7 @@ def param_calculator(paraml,fltind,outind,rmslist,rmsThres,dataPlot=False,deco="
                 print("model phase is %s"%(paraml[fltind[i]]["phase"]))
             if deco=="vecsum":
                 print("population vector decoder")
-                dec=col.decoder.vecsum(colMod.x,colMod.resulty,colMod.unitTracker,avgSur=surrInt[j],errNorm=True,centery=colMod.centery)#the decoder
+                dec=col.decoder.vecsum(colMod.x,colMod.resulty,colMod.unitTracker,avgSur=surrInt[j],centery=colMod.centery)#the decoder
             elif deco=="ml":
                 print("maximum likelihood decoder")
                 dec=col.decoder.ml(colMod.x,colMod.centery,colMod.resulty,colMod.unitTracker,avgSur=surrInt[j],tabStep=1)#the decoder
@@ -351,7 +361,7 @@ def param_calculator(paraml,fltind,outind,rmslist,rmsThres,dataPlot=False,deco="
                                   phase=paraml2[fltind2[i]]["phase"],avgSur=surrInt[j],depInt=[paraml2[fltind2[i]]["depb"],paraml2[fltind2[i]]["depu"]],depmod=True,stdtransform=False)#The model      
                     print("phases of models are %s (ml) and %s (vecsum)"%(paraml[fltind[i]]["phase"],paraml2[fltind2[i]]["phase"]))
 
-                dec1=col.decoder.vecsum(colMod2.x,colMod2.resulty,colMod2.unitTracker,avgSur=surrInt[j],errNorm=True,centery=colMod2.centery)#the decoder vecsum
+                dec1=col.decoder.vecsum(colMod2.x,colMod2.resulty,colMod2.unitTracker,avgSur=surrInt[j],centery=colMod2.centery)#the decoder vecsum
                 dec2=col.decoder.ml(colMod.x,colMod.centery,colMod.resulty,colMod.unitTracker,avgSur=surrInt[j],tabStep=1)#the decoder ml
                 
             else:
@@ -433,7 +443,16 @@ pvcuni=param_calculator(popVecParamscuni,popvecindcuni,popvecoutcuni,popVecRmscu
 """
 mltot=param_calculator(mlParamstot,mlindtot,mlout,mlRmstot,4,deco="ml",dataPlot=True,label="A")#mlout now unnecessary parameter which has no effect so leave it be
 pvtot=param_calculator(popVecParamstot,popvecindtot,popvecoutcuni,popVecRmstot,4.5,deco="vecsum",dataPlot=True,bwType="gradient/sum",label="B")
-#!!!PLOTS LOOK UGLY; REDO THE UNI AND CUNI SCANS WITH EXACTLY THE SAME PARAMETER SCAN SPACE
+#!!!PLOTS LOOK UGLY; REDO THE UNI AND CUNI SCANS WITH EXACTLY THE SAME PARAMETER SCAN SPACE done
+
+#Same with maxfr normalization in nonuniform model
+mltotmf=param_calculator(mlParamsmftot,mlindmftot,mlout,mlRmsmftot,4,deco="ml",dataPlot=True,label="A")#mlout now unnecessary parameter which has no effect so leave it be
+pvtotmf=param_calculator(popVecParamsmf,popvecindmf,popvecoutmf,popVecRmsmf,4.5,deco="vecsum",dataPlot=True,bwType="gradient/max",label="B")
+
+#best model fits considering also maxfr vs totarea normalizations:
+bothdecbest=param_calculator(mlParams,mlind,mlout,mlRms,4.5,deco="both",dataPlot=True,paraml2=popVecParamsmf,fltind2=popvecindmf,bwType2="gradient/max")
+bothdecbestttar=param_calculator(mlParams,mlind,mlout,mlRms,4.5,deco="both",dataPlot=True,paraml2=popVecParamstot,fltind2=popvecindtot)
+
 
 #Other considerations
 pvsum=param_calculator(popVecParams,popvecind,popvecout,popVecRms,4.5,deco="vecsum",dataPlot=True)
@@ -494,7 +513,7 @@ data=json.load(file)
 Best model different decoders RMS plots relative to different surrounds
 """
 mlbestRMS=mlParamstot[mlindtot[0]]["dif"]
-pvbestRMS=popVecParamstot[popvecindtot[0]]["dif"]
+pvbestRMS=popVecParamsmftot[popvecindmftot[0]]["dif"]
 plt.figure()
 ax=plt.subplot(111)
 ax.bar(np.array(list(mlbestRMS.keys()))-3,list(mlbestRMS.values()), width=5, edgecolor="magenta",color="None", align="center",label="Maximum likelihood",linewidth=3)
@@ -543,6 +562,7 @@ pvdepmf=dep_vals([pvbestmf["depb"],pvbestmf["depu"]],pvbestmf["phase"])
 
 mlbestRMS=mlbest["dif"]
 pvbestRMS=pvbest["dif"]
+pvmfbestRMS=pvbestmf["dif"]
 
 fig=plt.figure()
 plt.title("Kappa distribution",fontsize=30,y=1.08)
@@ -595,7 +615,7 @@ plt.box(False)
 
 ax1=fig.add_subplot(1,2,1)
 ax1.plot(np.linspace(0,359,360),mlkap,color="magenta",label="Maximum likelihood",linewidth=3)
-ax1.plot(np.linspace(0,359,360),pvkap,color="green",label="Population vector decoder",linewidth=3)
+ax1.plot(np.linspace(0,359,360),pvkapmf,color="green",label="Population vector decoder",linewidth=3)
 ax1.set_xticks(np.linspace(0,360,9))
 ax1.xaxis.set_major_locator(MultipleLocator(90))
 ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
@@ -606,7 +626,7 @@ ax1.set_title("Kappa distribution",fontsize=30)
 
 ax2=fig.add_subplot(1,2,2)
 ax2.plot(np.linspace(0,359,360),mldep,color="magenta",label="Maximum likelihood",linewidth=3)
-ax2.plot(np.linspace(0,359,360),pvdep,color="green",label="Population vector decoder",linewidth=3)
+ax2.plot(np.linspace(0,359,360),pvdepmf,color="green",label="Population vector decoder",linewidth=3)
 ax2.tick_params(axis='both', which='major', labelsize=20)
 ax2.set_xticks(np.linspace(0,360,9))
 ax2.xaxis.set_major_locator(MultipleLocator(90))
@@ -662,12 +682,12 @@ ax3=plt.subplot(2,2,4)#lin surr
 #Plot fine tunings
 plt.subplots_adjust(left=0.05, bottom=0.1, right=0.99, top=0.98, wspace=0.17, hspace=0.38)
 fig.text(0.08,0.92,"A",fontsize=20)
-fig.text(0.08,0.43,"B",fontsize=20)
+fig.text(0.055,0.43,"B",fontsize=20)
 fig.text(0.57,0.43,"C",fontsize=20)
 
 #RMS PLOT
 ax1.bar(np.array(list(mlbestRMS.keys()))-3,list(mlbestRMS.values()), width=5, edgecolor="magenta",color="None", align="center",label="Maximum likelihood",linewidth=3)
-ax1.bar(np.array(list(mlbestRMS.keys()))+3,list(pvbestRMS.values()), width=5, edgecolor="green",color="None", align="center",label="Population vector",linewidth=3)
+ax1.bar(np.array(list(mlbestRMS.keys()))+3,list(pvmfbestRMS.values()), width=5, edgecolor="green",color="None", align="center",label="Population vector",linewidth=3)
 ax1.tick_params(axis='both', which='major', labelsize=15)
 ax1.set_xticks(np.linspace(0,315,8))
 ax1.set_xlabel("Surround hue angle [°]",fontsize=20)
@@ -681,7 +701,7 @@ ax1.set_yticks(np.arange(0,8))
 #------------
 #KAPPA
 ax2.plot(np.linspace(0,359,360),mlkap,color="magenta",linewidth=3)
-ax2.plot(np.linspace(0,359,360),pvkap,color="green",linewidth=3)
+ax2.plot(np.linspace(0,359,360),pvkapmf,color="green",linewidth=3)
 ax2.set_xticks(np.linspace(0,360,9))
 ax2.xaxis.set_major_locator(MultipleLocator(90))
 ax2.xaxis.set_major_formatter(FormatStrFormatter('%d'))
@@ -694,7 +714,7 @@ ax2.set_xlabel("Preferred hue angle [°]",fontsize=20)
 ax2.set_ylabel("$\kappa$",fontsize=20)
 #SURR
 ax3.plot(np.linspace(0,359,360),mldep,color="magenta",linewidth=3)
-ax3.plot(np.linspace(0,359,360),pvdep,color="green",linewidth=3)
+ax3.plot(np.linspace(0,359,360),pvdepmf,color="green",linewidth=3)
 ax3.tick_params(axis='both', which='major', labelsize=15)
 ax3.set_xticks(np.linspace(0,360,9))
 ax3.xaxis.set_major_locator(MultipleLocator(90))
@@ -1302,14 +1322,20 @@ biastotar,biasmaxact=vecsum_error_comparison(ksur,phInt,kus,kbs,delta)
 sp=col.pathes.scanpath
 g = open(sp+'\\popvec_decobias_maxfr_vs_totact_phase_%s_%s.pckl'%(phInt,date),'wb')#no decoder correction
 pickle.dump([biastotar,biasmaxact], g)
+
+#Open already scanned data
+sp=col.pathes.scanpath
+biastotar,biasmaxact = pickle.load(open(sp+"\\popvec_decobias_maxfr_vs_totact_phase_[  0.   22.5  45.   67.5  90.  112.5 135.  157.5]_2020-05-26.pckl","rb"))
 plt.figure()
 plt.plot(biastotar,biasmaxact,".",color="black")                               
 plt.plot([0,6],[0,6],'--',color="gray")
 plt.xlabel("Total area normalized",size=20)
 plt.ylabel("Maximum activity normalized",size=20)
-plt.title("Population vector decoding bias comparison",size=30)
+plt.title("Population vector decoding error comparison",size=30)
 plt.xticks(size=20)
 plt.yticks(size=20)
+plt.xlim([0,6.1])
+plt.ylim([0,6.1])
 mng = plt.get_current_fig_manager()
 mng.window.state("zoomed")
 plt.savefig(path+"\\new\\popvec_decoding_bias_comparison.pdf")
@@ -1350,6 +1376,7 @@ popVecParams,popVecRms,popvecflt,popvecind,popvecout=file_opener("paraml_fit_10_
 popVecParamsmf,popVecRmsmf,popvecfltmf,popvecindmf,popvecoutmf=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-01-25_nocorr_maxnorm",4.5)
 popVecParamsuni,popVecRmsuni,popvecfltuni,popvecinduni,popvecoutuni=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-02-14_nocorr_uni",4.5)
 popVecParamscuni,popVecRmscuni,popvecfltcuni,popvecindcuni,popvecoutcuni=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-02-14_nocorr_unicent",4.5)
+popVecParamsmf,popVecRmsmf,popvecfltmf,popvecindmf,popvecoutmf=file_opener("paraml_fit_10_decoder_vecsum_errType_rms_2020-01-25_nocorr_maxnorm",4.5)
 
 """
 ml
@@ -1357,6 +1384,7 @@ ml
 mlParams,mlRms,mlflt,mlind,mlout=file_opener("paraml_fit_10_decoder_ml_errType_rms_2019-08-23",4)
 mlParamsuni,mlRmsuni,mlfltuni,mlinduni,mloutuni=file_opener("paraml_fit_10_decoder_ml_errType_rms_2020-02-14_uni",4.5)
 mlParamscuni,mlRmscuni,mlfltcuni,mlindcuni,mloutcuni=file_opener("paraml_fit_10_decoder_ml_errType_rms_2020-02-15_unicent",4.5)
+mlParamsmf,mlRmsmf,mlfltmf,mlindmf,mloutmf=file_opener("paraml_fit_10_decoder_ml_errType_rms_phase=22.5_maxfr_2020-05-26",4)
 
 """
 ml surkap modulated
@@ -1462,11 +1490,13 @@ Model error chi square with descending complexity (df inbetween for each is 1)
 mlchiun=np.array(list(mlParamsuni[mlinduni[0]]["dif"].values()))**2*16/5
 mlchicun=np.array(list(mlParamscuni[mlindcuni[0]]["dif"].values()))**2*16/5
 mlchinun=np.array(list(mlParams[mlind[0]]["dif"].values()))**2*16/5
+mlchinunmf=np.array(list(mlParamsmf[mlindmf[0]]["dif"].values()))**2*16/5
 
 #Popvec
 pvchiun=np.array(list(popVecParamsuni[popvecinduni[0]]["dif"].values()))**2*16/5
 pvchicun=np.array(list(popVecParamscuni[popvecindcuni[0]]["dif"].values()))**2*16/5
 pvchinun=np.array(list(popVecParams[popvecind[0]]["dif"].values()))**2*16/5
+pvchinunmf=np.array(list(popVecParamsmf[popvecindmf[0]]["dif"].values()))**2*16/5
 
 """
 # of variables for each model
@@ -1522,11 +1552,13 @@ nullaic=np.sum(nullchi)+2*nullparams
 mlunaic=np.sum(mlchiun)+2*mlparamUn
 mlcunaic=np.sum(mlchicun)+2*mlparamCun
 mlnunaic=np.sum(mlchinun)+2*mlparamNun
+mlnunaicmf=np.sum(mlchinunmf)+2*mlparamNun
 
 #Popvec
 pvunaic=np.sum(pvchiun)+2*pvparamUn
 pvcunaic=np.sum(pvchicun)+2*pvparamCun
 pvnunaic=np.sum(pvchinun)+2*pvparamNun
+pvnunaicmf=np.sum(pvchinunmf)+2*pvparamNun
 
 #AIC_model=chi_sq(model error)+2k (k:# of parameters)
 
@@ -1552,6 +1584,8 @@ mlnunbic=np.sqrt(np.sum(mlchinun))+np.log(obsnum)*mlparamNun
 mlunbic2=np.sum(mlchiun)+np.log(obsnum)*mlparamUn
 mlcunbic2=np.sum(mlchicun)+np.log(obsnum)*mlparamCun
 mlnunbic2=np.sum(mlchinun)+np.log(obsnum)*mlparamNun
+mlnunbic2mf=np.sum(mlchinunmf)+np.log(obsnum)*mlparamNun
+
 #Values not as expected and not fitting to AIC outcome
 
 #Popvec
@@ -1562,6 +1596,7 @@ pvnunbic=np.sqrt(np.sum(pvchinun))+np.log(obsnum)*pvparamNun
 pvunbic2=np.sum(pvchiun)+np.log(obsnum)*pvparamUn
 pvcunbic2=np.sum(pvchicun)+np.log(obsnum)*pvparamCun
 pvnunbic2=np.sum(pvchinun)+np.log(obsnum)*pvparamNun
+pvnunbic2mf=np.sum(pvchinunmf)+np.log(obsnum)*pvparamNun
 
 #BIC_model=sqrt(chi_sq(model error))+ln(T)*k (T:# of observations) TRY WITH CHI SQUARE
 
@@ -1589,10 +1624,12 @@ def sse_calc(dec,data):#dec is the best model angshift predictions, data is the 
 
 tss=[]
 ssenun=[]#for mlind
+ssenunmf=[]#for mlind
 ssecun=[]#for mlindcuni
 sseun=[]#for mlinduni
 
 pvssenun=[]
+pvssenunmf=[]
 pvssecun=[]
 pvsseun=[]
 
@@ -1600,11 +1637,15 @@ pvsseun=[]
 for i in dictTot.keys():
     print(i)
     tss.append(sse_calc(gmean,dictTot[i]))
-    
+  
     #ML
     modnun=param_extractor(mlParams,mlind,bwType="gradient/sum",avgSur=i,depmod=True,stdtransform=False)
     decnun=col.decoder.ml(modnun.x,modnun.centery,modnun.resulty,modnun.unitTracker,avgSur=i,dataFit=True)
     ssenun.append(sse_calc(decnun.angShift,dictTot[i]))
+    
+    modnunmf=param_extractor(mlParamsmf,mlindmf,bwType="gradient/max",avgSur=i,depmod=True,stdtransform=False)
+    decnunmf=col.decoder.ml(modnunmf.x,modnunmf.centery,modnunmf.resulty,modnunmf.unitTracker,avgSur=i,dataFit=True)
+    ssenunmf.append(sse_calc(decnunmf.angShift,dictTot[i]))
     
     modcun=param_extractor(mlParamscuni,mlindcuni,bwType="gradient/sum",avgSur=i,depmod=True,stdtransform=False)
     deccun=col.decoder.ml(modcun.x,modcun.centery,modcun.resulty,modcun.unitTracker,avgSur=i,dataFit=True)
@@ -1619,6 +1660,11 @@ for i in dictTot.keys():
     decnunpv=col.decoder.vecsum(modnunpv.x,modnunpv.resulty,modnunpv.unitTracker,avgSur=i,dataFit=True)
     pvssenun.append(sse_calc(decnunpv.angShift,dictTot[i]))
     
+    modnunpvmf=param_extractor(popVecParamsmf,popvecindmf,bwType="gradient/max",avgSur=i,depmod=True,stdtransform=False)
+    decnunpvmf=col.decoder.vecsum(modnunpvmf.x,modnunpvmf.resulty,modnunpvmf.unitTracker,avgSur=i,dataFit=True)
+    pvssenunmf.append(sse_calc(decnunpvmf.angShift,dictTot[i]))
+
+    
     modcunpv=param_extractor(popVecParamscuni,popvecindcuni,bwType="gradient/sum",avgSur=i,depmod=True,stdtransform=False)
     deccunpv=col.decoder.vecsum(modcunpv.x,modcunpv.resulty,modcunpv.unitTracker,avgSur=i,dataFit=True)
     pvssecun.append(sse_calc(deccunpv.angShift,dictTot[i]))
@@ -1630,11 +1676,13 @@ for i in dictTot.keys():
 
 #ML
 r2nun=1-(np.sum(ssenun)/np.sum(tss))
+r2nunmf=1-(np.sum(ssenunmf)/np.sum(tss))
 r2cun=1-(np.sum(ssecun)/np.sum(tss))
 r2un=1-(np.sum(sseun)/np.sum(tss))
 
 #Popvec
 r2nunpv=1-(np.sum(pvssenun)/np.sum(tss))
+r2nunpvmf=1-(np.sum(pvssenunmf)/np.sum(tss))
 r2cunpv=1-(np.sum(pvssecun)/np.sum(tss))
 r2unpv=1-(np.sum(pvsseun)/np.sum(tss))
 

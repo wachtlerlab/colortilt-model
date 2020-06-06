@@ -484,11 +484,14 @@ saver()
 #pvuni
 tuning_curve_plotter(2.3,2.0999999999999996,0.6000000000000001)
 saver()
-#pvcuni best mdoel of pv
+#pvcuni
 tuning_curve_plotter("B",1,2.3,1,stdInt=[1.8,1.8],bwType="gradient/sum",phase=22.5,depInt=[0.4,0.6],depmod=True,stdtransform=False)
 saver()
 #mlbestmod
 tuning_curve_plotter("A",1,2.3,1,stdInt=[1.2,0.9],bwType="gradient/sum",phase=22.5,depInt=[0.2,0.3999999999999999],depmod=True,stdtransform=False)
+saver()
+#pvnonunifmaxfr best model for popvec
+tuning_curve_plotter("B",None,2.3,None,stdInt=[2,1.7],bwType="gradient/max",phase=22.5,depInt=[0.4,0.6],depmod=True,stdtransform=False)
 saver()
 #pvnonunif
 tuning_curve_plotter(1,2.3,1,stdInt=[2,1.9],bwType="gradient/sum",phase=22.5,depInt=[0.4,0.6],depmod=True,stdtransform=False)
@@ -821,6 +824,11 @@ box1.x1+=0.04
 ax1.set_position(box1)
 
 plt.savefig(path+"\\new\decoding_error_and_decoders_fig.pdf")
+"""
+
+"""
+Vecsum decoding error in different normalizations comparison figure:
+Done in data_params.py (before goodness of fit stuff)
 """
 
 """
