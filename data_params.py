@@ -462,12 +462,12 @@ pvmf=param_calculator(popVecParamsmf,popvecindmf,popvecoutmf,popVecRmsmf,4.5,dec
 #Same trick as before, try to open the pckl file, if not create one
 #TODO: redo this with popvec cuni
 try: 
-    with open('dictionaries_pvtotarea_2020-02-11.json',"rb") as file:
+    with open('dictionaries_pvtotarea_2020-06-30.json',"rb") as file:
         datDicts=json.load(file)
 except FileNotFoundError:    
     print("forming the dictionaries")
-    mlSymDict=param_calculator(mlParams,mlind,mlout,4)
-    popvecSymDict=param_calculator(popVecParams,popvecind,popvecout,4.5,deco="vecsum")
+    mlSymDict=param_calculator(mlParamstot,mlindtot,mlout,mlRmstot,4,deco="ml",dataPlot=True,label="A")
+    popvecSymDict=param_calculator(popVecParamsmf,popvecindmf,popvecoutmf,popVecRmsmf,4.5,deco="vecsum",dataPlot=True,bwType="gradient/max",label="B")
     jsondict={"ml":{},"vecsum":{}}
     for i in list(mlSymDict[1].keys()):
         csdml=mlSymDict[1][i].centSurDif
@@ -814,7 +814,7 @@ def symmetry_analyzer(dicti):
     if dicti==dictTot:
         name="Empirical data"#The data has to be reshaped, that RMS is calculated for
                              #each individual plot, then the average is taken for the total
-        symVal={"rms":{},"std":{}}#avgse is averaged standart error
+        symVal={"rms":{},"std":{},"angdif":{}}#angdif is the absolute mean angle difference per surround
         
         fig=plotter.plot_template(auto=True)
         plt.title("Symmetry analysis of %s"%(name),y=1.08,fontsize=30)
@@ -823,18 +823,20 @@ def symmetry_analyzer(dicti):
         for i in range(0,len(dicti)):
             csdneg=np.flip(abs(np.array(list(dicti[angles[i]]["angshi"].keys())))[0:7],0)
             angsneg=np.flip(abs(np.array(list(dicti[angles[i]]["angshi"].values())))[0:7],0)
-            negse=np.flip(abs(np.array(list(dicti[angles[i]]["se"].values())))[0:7],0)#standard error values at negative side., dont use 
-                                                                              #it for the time being, ask Thomas first how to get along 
-                                                                              #with it
+            negse=np.flip(abs(np.array(list(dicti[angles[i]]["se"].values())))[0:7],0)#standard error values at negative side
             
             csdpos=np.array(list(dicti[angles[i]]["angshi"].keys()))[8:-1]
             angspos=np.array(list(dicti[angles[i]]["angshi"].values()))[8:-1]
             posse=np.array(list(dicti[angles[i]]["se"].values()))[8:-1]
             
+            angdif = np.mean(abs(angsneg-angspos))
+            
             rms=np.sqrt(((angsneg-angspos)**2).mean())
             sd=np.std(abs(angsneg-angspos))#the standart deviation of the angle difference between halves (all positive)
             symVal["rms"].update({angles[i]:rms})
             symVal["std"].update({angles[i]:sd})
+            symVal["angdif"].update({angles[i]:angdif})
+            
             
             ax=plotter.subplotter(fig,i)
             ax.errorbar(csdneg,angsneg,negse,fmt='x',capsize=3,markersize=5,label="negative",ecolor="blue",color="blue")
@@ -857,6 +859,8 @@ def symmetry_analyzer(dicti):
     
     else:
         symVal={"ml":{},"vecsum":{}}
+        symVal["ml"].update({"angdif":{},"rms":{}})
+        symVal["vecsum"].update({"angdif":{},"rms":{}})
         for i in ("ml","vecsum"):
             if i=="ml":
                 name="maximum likelihood decoder"
@@ -878,8 +882,10 @@ def symmetry_analyzer(dicti):
                     angsneg=np.flip(abs(np.array(dicti[i]["%s"%(j)]["angs"][1:dicti[i]["%s"%(j)]["csd"].index(0)])),0)#angular shifts are transformed into absolute values.
                     csdpos=np.array(dicti[i]["%s"%(j)]["csd"][dicti[i]["%s"%(j)]["csd"].index(0)+1:])
                     angspos=np.array(dicti[i]["%s"%(j)]["angs"][dicti[i]["%s"%(j)]["csd"].index(0)+1:])   
+                angdif = np.mean(abs(angsneg-angspos))
                 rms=np.sqrt(((angsneg-angspos)**2).mean())
-                symVal[i].update({j:rms})
+                symVal[i]["rms"].update({j:rms})
+                symVal[i]["angdif"].update({j:angdif})
                 ax=plotter.subplotter(fig,angles.index(j))
                 ax.plot(csdneg,angsneg,"x",color="blue",label="negative",markersize=5)
                 ax.plot(csdpos,angspos,".",color="red",label="positive",markersize=5)
@@ -941,9 +947,21 @@ def symmetry_analyzer(dicti):
     return symVal
     """
 datsym=symmetry_analyzer(dictTot)#data symmetry (no change necessary)
-decsym=symmetry_analyzer(datDicts)
-mlsym=decsym["ml"]
-popvecsym=decsym["vecsum"]
+decsym=symmetry_analyzer(datDicts)#decoder symmetry (added the absolute mean difference per surround per 30.06)
+
+mlsym = decsym["ml"]
+popvecsym = decsym["vecsum"]
+
+
+mlmeansymdif = np.mean(np.array(list(mlsym["angdif"].values())))
+mlsymdifstd = np.std(np.array(list(mlsym["angdif"].values())))
+
+pvmeansymdif = np.mean(np.array(list(popvecsym["angdif"].values())))
+pvsymdifstd = np.std(np.array(list(popvecsym["angdif"].values())))
+
+datmeansymdif = np.mean(np.array(list(datsym["angdif"].values())))
+datsymdifstd = np.std(np.array(list(datsym["angdif"].values())))
+
 plt.figure()
 plt.title("Symmetry comparsion between decoders and data",y=1.08,fontsize=30)
 plt.xlabel("Absolute center surround angle difference [°]",fontsize=30)
@@ -1503,6 +1521,7 @@ pvchinunmf=np.array(list(popVecParamsmf[popvecindmf[0]]["dif"].values()))**2*16/
 """
 #ML
 nullparams=len(dictTot)
+gnullparams=1
 mlparamUn=len(mlParamsuni[0])-1
 mlparamCun=len(mlParamscuni[0])-2#as kb=ku
 mlparamNun=len(mlParams[0])-1
@@ -1527,6 +1546,24 @@ chiunnunml=np.sum(mlchiun-mlchinun)#chi test between center only uniform and non
 dfunnunml=mlparamNun-mlparamUn
 punnunml=1-chisq.cdf(chiunnunml,dfunnunml)#says zero, so significant
 
+
+#compare with null model (gmeans)
+chiungnullml=np.sum(gnullchi-mlchiun)#chi test between center only uniform and non-uniform  
+dfungnullml=mlparamUn-gnullparams
+pungnullml=1-chisq.cdf(chiungnullml,dfungnullml)#says zero, so significant
+
+chicungnullml=np.sum(gnullchi-mlchicun)#chi test between center only uniform and non-uniform  
+dfcungnullml=mlparamCun-gnullparams
+pcungnullml=1-chisq.cdf(chicungnullml,dfcungnullml)#says zero, so significant
+
+chinungnullml=np.sum(gnullchi-mlchinun)#chi test between center only uniform and non-uniform  
+dfnungnullml=mlparamNun-gnullparams
+pnungnullml=1-chisq.cdf(chinungnullml,dfnungnullml)#says zero, so significant
+
+chinungnullmlmf=np.sum(gnullchi-mlchinunmf)#chi test between center only uniform and non-uniform  
+dfnungnullmlmf=mlparamNun-gnullparams
+pnungnullmlmf=1-chisq.cdf(chinungnullmlmf,dfnungnullmlmf)#says zero, so significant
+
 #Popvec
 chiuncunpv=np.sum(pvchiun-pvchicun)#chi test between uniform and center only uniform
 dfuncunpv=pvparamCun-pvparamUn
@@ -1540,6 +1577,23 @@ chiunnunpv=np.sum(pvchiun-pvchinun)#chi test between center only uniform and non
 dfunnunpv=pvparamNun-pvparamUn
 punnunpv=1-chisq.cdf(chiunnunpv,dfunnunpv)#says zero, so significant
 #chi=chi(simple model)-chi(complex model), df is k(complex)-k(simple)
+
+#compare with null model
+chiungnullpv=np.sum(gnullchi-pvchiun)#chi test between center only uniform and non-uniform  
+dfungnullpv=pvparamUn-gnullparams
+pungnullpv=1-chisq.cdf(chiungnullpv,dfungnullpv)#says zero, so significant
+
+chicungnullpv=np.sum(gnullchi-pvchicun)#chi test between center only uniform and non-uniform  
+dfcungnullpv=pvparamCun-gnullparams
+pcungnullpv=1-chisq.cdf(chicungnullpv,dfcungnullpv)#says zero, so significant
+
+chinungnullpv=np.sum(gnullchi-pvchinun)#chi test between center only uniform and non-uniform  
+dfnungnullpv=pvparamNun-gnullparams
+pnungnullpv=1-chisq.cdf(chinungnullpv,dfnungnullpv)#says zero, so significant
+
+chinungnullpvmf=np.sum(gnullchi-pvchinunmf)#chi test between center only uniform and non-uniform  
+dfnungnullpvmf=pvparamNun-gnullparams
+pnungnullpvmf=1-chisq.cdf(chinungnullpv,dfnungnullpvmf)#says zero, so significant
 
 """
 AIC of the models (to compare with null model as they are not nested)
@@ -1602,6 +1656,7 @@ pvnunbic2mf=np.sum(pvchinunmf)+np.log(obsnum)*pvparamNun
 
 """
 BIC for nested models NOT USEFUL FOR MY CASE AS THIS ALSO NOT APPLICABLE FOR NESTED MODELS!!!
+USE TO COMPARE WITH NULL MODEL (GMEANS)
 """
 #ML
 bicuncun=np.sum(mlchiun)-np.sum(mlchicun)-np.log(obsnum)*(mlparamCun-mlparamUn)
@@ -1609,10 +1664,24 @@ biccunnun=np.sum(mlchicun)-np.sum(mlchinun)-np.log(obsnum)*(mlparamNun-mlparamCu
 bicunnun=np.sum(mlchiun)-np.sum(mlchinun)-np.log(obsnum)*(mlparamNun-mlparamUn)
 #values as expected
 
+#nullmodel comparison
+bicungnull=np.sum(gnullchi)-np.sum(mlchiun)-np.log(obsnum)*(mlparamUn-1)
+biccungnull=np.sum(gnullchi)-np.sum(mlchicun)-np.log(obsnum)*(mlparamCun-1)
+bicnungnull=np.sum(gnullchi)-np.sum(mlchinun)-np.log(obsnum)*(mlparamNun-1)
+bicnungnullmf=np.sum(gnullchi)-np.sum(mlchinunmf)-np.log(obsnum)*(mlparamNun-1)
+
+
 #Popvec
 bicuncunpv=np.sum(pvchiun)-np.sum(pvchicun)-np.log(obsnum)*(pvparamCun-pvparamUn)
 biccunnunpv=np.sum(pvchicun)-np.sum(pvchinun)-np.log(obsnum)*(pvparamNun-pvparamCun)
 bicunnunpv=np.sum(pvchiun)-np.sum(pvchinun)-np.log(obsnum)*(pvparamNun-pvparamUn)
+
+#nullmodel comparison
+bicungnullpv=np.sum(gnullchi)-np.sum(pvchiun)-np.log(obsnum)*(pvparamUn-1)
+biccungnullpv=np.sum(gnullchi)-np.sum(pvchicun)-np.log(obsnum)*(pvparamCun-1)
+bicnungnullpv=np.sum(gnullchi)-np.sum(pvchinun)-np.log(obsnum)*(pvparamNun-1)
+bicnungnullpvmf=np.sum(gnullchi)-np.sum(pvchinunmf)-np.log(obsnum)*(pvparamNun-1)
+
 
 #nestedbic=(chi_sq(simple model error)-chi_sq(complex model error))-ln(T)*(k(complex)-k(simple))
 
