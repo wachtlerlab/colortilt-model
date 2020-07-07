@@ -15,6 +15,7 @@ A good idea is to transfer this script over to colclass, so it is easily called 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mp
+from matplotlib import cm
 import colclass as col
 from colclass import pathes
 from scipy import stats as st
@@ -830,6 +831,56 @@ plt.savefig(path+"\\new\decoding_error_and_decoders_fig.pdf")
 Vecsum decoding error in different normalizations comparison figure:
 Done in data_params.py (before goodness of fit stuff)
 """
+
+#Effecst of changing the parameters in the uniform model (slightly adapted)
+"""
+params = np.array([[0.5,1,0.3],[0.5,1,0.5],[1,1,0.3],[1,1,0.5],[1,1,0.8],[1.5,1,0.3],[1.5,1,0.5],[1.5,1,0.8]])
+
+fig=plt.figure()
+plt.xticks([])
+plt.yticks([])
+plt.box(False)
+ax1=fig.add_subplot(1,2,1)
+ax1.set_title("Population vector decoder",fontsize=30)
+ax1.set_ylabel("Induced hue shift [°]",fontsize=20)
+ax1.set_xticks(np.linspace(0,180,9))
+ax1.tick_params(axis='both', which='major', labelsize=20)
+ax1.xaxis.set_major_locator(MultipleLocator(45))
+ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+ax1.xaxis.set_minor_locator(MultipleLocator(22.5))
+ax1.set_xlabel("Center-surround difference [°]",fontsize=20)
+ax1.set_xlim([0,180])
+ax1.set_ylim([0,46])
+ax1.set_color_cycle([cm.coolwarm(i) for i in np.linspace(0, 1, len(params))])
+
+ax2=fig.add_subplot(1,2,2)
+ax2.set_title("Maximum likelihood decoder",fontsize=30)
+ax2.set_xticks(np.linspace(0,180,9))
+ax2.tick_params(axis='both', which='major', labelsize=20)
+ax2.xaxis.set_major_locator(MultipleLocator(45))
+ax2.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+ax2.xaxis.set_minor_locator(MultipleLocator(22.5))
+ax2.set_xlim([0,180])
+ax2.set_ylim([0,46])
+ax2.set_color_cycle([cm.coolwarm(i) for i in np.linspace(0, 1, len(params))])
+
+
+for i in range(len(params)):
+    mod=col.colmod(*params[i],[1,10],bwType="regular")
+    decv=col.decoder.vecsum(mod.x,mod.resulty,mod.unitTracker)
+    decm=col.decoder.ml(mod.x,mod.centery,mod.resulty,mod.unitTracker,tabStep=1)
+    ax1.plot(np.array(decv.centSurDif)[np.array(decv.centSurDif)>=0],np.array(decv.angShift)[np.array(decv.centSurDif)>=0],label=params[i])
+    ax2.plot(np.array(decm.centSurDif)[np.array(decm.centSurDif)>=0],np.array(decm.angShift)[np.array(decm.centSurDif)>=0],label=params[i])
+    ax1.plot(np.array(decv.centSurDif)[np.array(decv.angShift)==max(decv.angShift)],max(decv.angShift),".",color="black")
+    mlmaxidx = int(np.median(np.where(decm.angShift==max(decm.angShift))[0])) #the ml decoder indices with the max angshift values, choose the median to get the peak.
+    ax2.plot(np.array(decm.centSurDif)[mlmaxidx],max(decm.angShift),".",color="black")
+
+    print("One condition plotted")    
+ax2.legend(loc="best",fontsize=17)
+plt.subplots_adjust(left=0.06, bottom=0.1, right=0.98, top=0.93, wspace=0.14, hspace=0)
+plt.savefig(path+r"\\new\unimod_parameter_investigation.pdf")
+"""
+path
 
 """
 FIGURES TO PUT:
