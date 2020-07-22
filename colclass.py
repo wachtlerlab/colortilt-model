@@ -305,7 +305,7 @@ class decoder:
             activity with surround modulation and the look-up table entries, the most similar population activity in the look-up table (least root mean square difference)
             is found. The decoded angle is the encoded angle by the chosen look up table entry.
         """
-        def __init__(self,x,centery,resulty,unitTracker,avgSur=180,tabStep=5,norm=False,dataFit=False):#tabStep minimum 1 where stimulus angle binning 0.1 ist 
+        def __init__(self,x,centery,resulty,unitTracker,avgSur=180,tabStep=5,norm=False,dataFit=False,smooth=False,sconst=None):#tabStep minimum 1 where stimulus angle binning 0.1 ist 
             """Parameters
             -------------
             x: array. The colmod.x variable should be given here. This parameter is used for center stimulus hue angle.
@@ -319,7 +319,15 @@ class decoder:
             norm: boolean, optional. If True, the look-up table entries are  normalized so that each entry has a sum of 1.
             dataFit: boolean, optional. If True, only the measured center hue angles (0,45,90,...,315) in the psychophysics data are computed by
             the decoder. This parameter is to reduce computational workload during data fit scan.
-            
+            smooth: boolean, optional. If true, smoothing procedure is implemented, by averaging over the neighboring angles of the angle with minimum
+            RMS in the look up table. Neighboring angles are weighted by their error difference with the RMS of the minimum angle. For that, the difference
+            between the minimum angle and the neighboring angles are taken, which is then normalized depending on the RMS quotient, namely:
+            decodedAng = (dif_neg + dif_pos)/2 + min_ang, where min_ang is the angle with the minimum RMS (decoded angle without normalization), and dif_neg and
+            dif_pos are RMS weighted angle difference between neigbors, respectively: dif_neg = (ang_negneighbor - min_ang)/(RMS_negneighbor/RMS_minang) i.e.
+            dif_neg = (ang_negneighbor - min_ang)*(RMS_minang/RMS_negneighbor). The term (RMS_minang/RMS_negneighbor) gives the degree of the errors of the 
+            neighboring angles deviating the error of the angle with minimum error. Namely, if RMS of both angles are same, then the term is 1 and difference is 
+            weighted without distortion, if it is close to zero (namely neighboring angle has way bigger error), then the angle difference is not considered.
+            sconst: integer, optional. Defines the constant of the smooth factor, changing this parameter changes the weight of smooth factor.
             Returns
             -------
             centSurDif: list. The center-surround stimulus hue angle difference in degrees.
@@ -356,7 +364,7 @@ class decoder:
             if dataFit==True:#If model fit to the data is to be done, only the measured angles are taken into consideration
                 datAng=avgSur+np.linspace(-180,157.5,16)#transform the data center-surround angle difference into absolute angular values
                 datAng[np.where(datAng>360)]=datAng[np.where(datAng>360)]-360#Ensure there is no angle bigger than 360°
-                datAng[np.where(datAng<0)]=datAng[np.where(datAng<0)]+360#Ensure there is no angle smaller than 360°
+                datAng[np.where(datAng<0)]=datAng[np.where(datAng<0)]+360#Ensure there is no angle smaller than 0°
             tabLook={}
             for i in range(np.where(x==0)[0][0],np.where(x==360)[0][0],tabStep):#i here is the stimulusAngle index
                 tabLook.update(tab_look(x[i]))#This loop creates the whole look-up table for all center stimulus hues.
@@ -378,8 +386,27 @@ class decoder:
                         distLUT.append(np.sqrt(np.mean(np.asarray(inhVal)**2)))#both areas of activity before modulation and after modulation is normalized to 1 
                 #plt.plot(distLUT)
                 
-                decodedAng=x[range(np.where(x==0)[0][0],np.where(x==360)[0][0],tabStep)][np.where(np.asarray(distLUT)==min(distLUT))[0]]
-                #Decoded angle is the smallest RMS value in the look-up table, x is here limited to 0 and 360 degrees.
+                if smooth==False:
+                    #Decoded angle is the smallest RMS value in the look-up table, x is here limited to 0 and 360 degrees.
+                    decodedAng=x[range(np.where(x==0)[0][0],np.where(x==360)[0][0],tabStep)][np.where(np.asarray(distLUT)==min(distLUT))[0]]
+                else:#do correction, choose the neighbor with better RMS, then take  (Winkel_Nachbar -  Winkel_best ) * (RMS_best / (RMS_nachbar + RMS_best ))
+                    #Decoded angle is smoothed by the neigboring angles in a RMS weighted fashion (one positive and one negative neighbors not strong enough to smooth, try with 100 neighbors now)
+                    angles = x[range(np.where(x==0)[0][0],np.where(x==360)[0][0],tabStep)]
+                    minAng = x[range(np.where(x==0)[0][0],np.where(x==360)[0][0],tabStep)][np.where(np.asarray(distLUT)==min(distLUT))[0]]#the angle with minimum RMS
+                    minidx = list(x[range(np.where(x==0)[0][0],np.where(x==360)[0][0],tabStep)]).index(minAng) % len(distLUT)#index of the minimum angle
+                    neigidx = np.where(distLUT==min([distLUT[minidx-1],distLUT[(minidx+1)%len(distLUT)]]))[0][0]#index of the neighboring angle with 2nd best RMS.
+                    #% (modulo) operator is used to wrap around circularly for index values bigger than len(distLUT)
+                    #print(minidx,neigidx)
+                    smoothFactor = distLUT[minidx]/(distLUT[minidx]+distLUT[neigidx])#This approach only takes the differences into account                        
+                    if neigidx == 0 and minidx == len(angles)-1:
+                        angdif = (angles[neigidx]+360-angles[minidx])
+                    elif minidx == 0 and neigidx == len(angles)-1:
+                        angdif = (angles[neigidx]-angles[minidx]-360)#This approach only takes the differences into account
+                    else:
+                        angdif = (angles[neigidx]-angles[minidx])
+                    #print(smoothFactor,angles[minidx],angles[neigidx],angdif,minidx,neigidx)
+                    decodedAng = sconst*smoothFactor*angdif + minAng#This should work now.
+                    #print(decodedAng)
                 if len(decodedAng)>1:#If the decoded angle is ambigious (more than 1 minimum value), then the model paramters are not realistic,
                                      #so the model is not further considered and return values are nonsensical.
                     print("stimAng=%s,decAng=%s"%(stimulusAngle,decodedAng))

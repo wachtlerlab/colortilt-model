@@ -46,7 +46,6 @@ for i in range(0,len(np.linspace(0,359,num=360))):#i here is the stimulusAngle (
     #dict.update works like list.append, adds dictionary value. Do it witohut normalization as well and compare 
 
 def ML_decoder(stimulusAngle):
-#stimulusAngle=0
     popInh=[]
     for i in range(1,len(colMod.unitTracker)+1):
         popInh.append(colMod.resulty[np.where(colMod.unitTracker==i)[0][0]][np.where(colMod.x==stimulusAngle)[0][0]])
@@ -62,6 +61,8 @@ Decoded parameters for different center stimuli hues.
 """
 hueShift=[]
 centSurDif=[]
+hueShifts=[]
+centSurDifs=[]
 difRMS=[]
 for i in range(0,len(np.linspace(0,359,num=360))):
     hueShift.append(ML_decoder(i)[0])

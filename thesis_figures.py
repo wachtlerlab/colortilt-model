@@ -833,9 +833,16 @@ Done in data_params.py (before goodness of fit stuff)
 """
 
 #Effecst of changing the parameters in the uniform model (slightly adapted)
-"""
-params = np.array([[0.5,1,0.3],[0.5,1,0.5],[1,1,0.3],[1,1,0.5],[1,1,0.8],[1.5,1,0.3],[1.5,1,0.5],[1.5,1,0.8]])
+#14.07 - update the color map -> make a 3x3 matrix, code the kappa with different color maps and the variation within kappa with different tones in the color map
+params = np.array([[1,1,0.3],[1,1,0.5],[1.5,1,0.3],[1.5,1,0.5],[1.5,1,0.8],[2,1,0.3],[2,1,0.5],[2,1,0.8]])#array in form of (kappa_1(depth_1,2,3),kappa_2(depth_1,2,3),kappa_3(depth_1,2,3))
+col1 = [cm.Reds(0.25),cm.Reds(0.5)]
+col2 = []
+col3 = []
+for i in np.linspace(0.25,0.75,3):
+    col2.append(cm.Greens(i))
+    col3.append(cm.Blues(i))
 
+cols = np.squeeze([col1+col2+col3])
 fig=plt.figure()
 plt.xticks([])
 plt.yticks([])
@@ -850,8 +857,7 @@ ax1.xaxis.set_major_formatter(FormatStrFormatter('%d'))
 ax1.xaxis.set_minor_locator(MultipleLocator(22.5))
 ax1.set_xlabel("Center-surround difference [°]",fontsize=20)
 ax1.set_xlim([0,180])
-ax1.set_ylim([0,46])
-ax1.set_color_cycle([cm.coolwarm(i) for i in np.linspace(0, 1, len(params))])
+ax1.set_ylim([0,32])
 
 ax2=fig.add_subplot(1,2,2)
 ax2.set_title("Maximum likelihood decoder",fontsize=30)
@@ -861,16 +867,19 @@ ax2.xaxis.set_major_locator(MultipleLocator(45))
 ax2.xaxis.set_major_formatter(FormatStrFormatter('%d'))
 ax2.xaxis.set_minor_locator(MultipleLocator(22.5))
 ax2.set_xlim([0,180])
-ax2.set_ylim([0,46])
-ax2.set_color_cycle([cm.coolwarm(i) for i in np.linspace(0, 1, len(params))])
+ax2.set_ylim([0,32])
 
-
-for i in range(len(params)):
+"""
+from scipy.signal import savgol_filter
+mlangs = savgol_filter(np.squeeze(decm.angShift), 31, 3)
+FIND A SMOOTHING BETTER THAN THIS. ASK THOMAS THE INTERPOLATION I USED HERE FIRST.
+"""
+for i in range(len(params)):#try further interpolation after smoothing in 10-idx angle window. Try salisky golay filter
     mod=col.colmod(*params[i],[1,10],bwType="regular")
     decv=col.decoder.vecsum(mod.x,mod.resulty,mod.unitTracker)
-    decm=col.decoder.ml(mod.x,mod.centery,mod.resulty,mod.unitTracker,tabStep=1)
-    ax1.plot(np.array(decv.centSurDif)[np.array(decv.centSurDif)>=0],np.array(decv.angShift)[np.array(decv.centSurDif)>=0],label=params[i])
-    ax2.plot(np.array(decm.centSurDif)[np.array(decm.centSurDif)>=0],np.array(decm.angShift)[np.array(decm.centSurDif)>=0],label=params[i])
+    decm=col.decoder.ml(mod.x,mod.centery,mod.resulty,mod.unitTracker,tabStep=1,smooth=True,sconst=0.5)
+    ax1.plot(np.array(decv.centSurDif)[np.array(decv.centSurDif)>=0],np.array(decv.angShift)[np.array(decv.centSurDif)>=0],label=params[i],color=cols[i])
+    ax2.plot(np.array(decm.centSurDif)[np.array(decm.centSurDif)>=0],np.array(decm.angShift)[np.array(decm.centSurDif)>=0],label=params[i],color=cols[i])
     ax1.plot(np.array(decv.centSurDif)[np.array(decv.angShift)==max(decv.angShift)],max(decv.angShift),".",color="black")
     mlmaxidx = int(np.median(np.where(decm.angShift==max(decm.angShift))[0])) #the ml decoder indices with the max angshift values, choose the median to get the peak.
     ax2.plot(np.array(decm.centSurDif)[mlmaxidx],max(decm.angShift),".",color="black")
@@ -878,9 +887,9 @@ for i in range(len(params)):
     print("One condition plotted")    
 ax2.legend(loc="best",fontsize=17)
 plt.subplots_adjust(left=0.06, bottom=0.1, right=0.98, top=0.93, wspace=0.14, hspace=0)
-plt.savefig(path+r"\\new\unimod_parameter_investigation.pdf")
-"""
-path
+#plt.savefig(path+r"\\new\unimod_parameter_investigation.pdf")
+
+
 
 """
 FIGURES TO PUT:
