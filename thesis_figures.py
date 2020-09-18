@@ -832,6 +832,7 @@ Vecsum decoding error in different normalizations comparison figure:
 Done in data_params.py (before goodness of fit stuff)
 """
 
+r"""
 #Effecst of changing the parameters in the uniform model (slightly adapted)
 #14.07 - update the color map -> make a 3x3 matrix, code the kappa with different color maps and the variation within kappa with different tones in the color map
 params = np.array([[1,1,0.3],[1,1,0.5],[1.5,1,0.3],[1.5,1,0.5],[1.5,1,0.8],[2,1,0.3],[2,1,0.5],[2,1,0.8]])#array in form of (kappa_1(depth_1,2,3),kappa_2(depth_1,2,3),kappa_3(depth_1,2,3))
@@ -868,12 +869,16 @@ ax2.xaxis.set_major_formatter(FormatStrFormatter('%d'))
 ax2.xaxis.set_minor_locator(MultipleLocator(22.5))
 ax2.set_xlim([0,180])
 ax2.set_ylim([0,32])
+"""
+
 
 """
 from scipy.signal import savgol_filter
 mlangs = savgol_filter(np.squeeze(decm.angShift), 31, 3)
 FIND A SMOOTHING BETTER THAN THIS. ASK THOMAS THE INTERPOLATION I USED HERE FIRST.
 """
+
+r"""
 for i in range(len(params)):#try further interpolation after smoothing in 10-idx angle window. Try salisky golay filter
     mod=col.colmod(*params[i],[1,10],bwType="regular")
     decv=col.decoder.vecsum(mod.x,mod.resulty,mod.unitTracker)
@@ -887,9 +892,53 @@ for i in range(len(params)):#try further interpolation after smoothing in 10-idx
     print("One condition plotted")    
 ax2.legend(loc="best",fontsize=17)
 plt.subplots_adjust(left=0.06, bottom=0.1, right=0.98, top=0.93, wspace=0.14, hspace=0)
-#plt.savefig(path+r"\\new\unimod_parameter_investigation.pdf")
+plt.savefig(path+r"\\new\unimod_parameter_investigation.pdf")
+"""
 
+"""
+Figure: get population activity for a given set of parameters at 180 degrees surround
+"""
+r"""
+mlmfbest = {'depInt': [0.2, 0.3999999999999999],
+            'bwType': 'gradient/max',
+            'stdInt': [ 1.6, 0.5],
+            'Ksur': 1.811111111111111,
+            'phase': 22.5,
+            'depmod': True,
+            'stdtransform': False,
+            'Kcent': None,
+            'maxInhRate': None}
 
+mltabest = {'depInt': [0.2, 0.3999999999999999],
+            'bwType': 'gradient/sum',
+            'stdInt': [1.2, 0.9],
+            'Ksur': 2.3,
+            'phase': 22.5,
+            'depmod': True,
+            'stdtransform': False,
+            'Kcent': None,
+            'maxInhRate': None}
+
+mlmfmod = col.colmod(**mlmfbest)
+mltamod = col.colmod(**mltabest)
+
+tunincurvesmf = np.squeeze(mlmfmod.resulty)
+tunincurvesta = np.squeeze(mltamod.resulty)
+fig = plotter.plot_template()
+for i, angle in enumerate([135,90,45,180,0,225,270,315]):    
+    ax = plotter.subplotter(fig, i)
+    angle = np.where(mlmfmod.x==angle)[0][0]
+    ax.plot(tunincurvesmf[:,angle], 'r')
+    ax.plot(tunincurvesta[:,angle]/np.max(tunincurvesta), 'b')
+    ax.set_ylim(0,1.1)
+    ax.set_xticks(np.linspace(0,360,9))
+    ax.xaxis.set_major_locator(MultipleLocator(90))
+    ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+    ax.xaxis.set_minor_locator(MultipleLocator(45))
+    ax.tick_params(axis='both', which='major', labelsize=15)
+
+ax.legend(['maxfr','totarea'], prop={"size":12})
+"""
 
 """
 FIGURES TO PUT:

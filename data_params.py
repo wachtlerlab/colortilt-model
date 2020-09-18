@@ -119,13 +119,17 @@ plt.ylabel("Number of models",fontsize=15)
 plt.xticks(np.arange(3.7,7.6,0.2),)
 plt.tick_params(axis='both', which='major', labelsize=15)
 
-def param_calculator(paraml,fltind,outind,rmslist,rmsThres,dataPlot=False,deco="ml",paraml2=None,fltind2=None,datDict=None,speplot=False,unimod=False,bwType="gradient/sum",bwType2="gradient/sum",label=None):
+def param_calculator(paraml,fltind,outind,rmslist,rmsThres,dataPlot=False,deco="ml",paraml2=None,fltind2=None,datDict=None,speplot=False,unimod=False,bwType="gradient/sum",bwType2="gradient/sum",label=None,RMSnorm=False):
     #paraml2 for deco=="both", that 2nd colmod model is created for the other decoder (1st ml, 2nd vecsum)
     #speplot: use to specify the model you want to plot (based on the index entry)
     #unimod: use to specify if plotted model is uniform or non-uniform (for uniform model the dictionary has to be slightly different)
     #bwType is for 1st model, bwType2 only when bothdec 
     #label is for putting labels on the color coded parameter space plot
     #for the parameter plot the number of subplots can be reduced to a considerable amount.
+    #to see which one is distributed to a wider area.
+    #RMSnorm: bool, optional. If true, the RMS values are normalized per decoder so that the minimum value is 1. This is used to
+    #compare relative distribution of the parameters for the decoders. You can also use it to only get the parameter distribution 
+    #plots, since this variable has nothing to do with the RMS variable given to the function
     """
     Calculate average center BW, min-max center BW difference, average sur mod depth, min-max sur mod depth by using following parameters:
     Parameters: surround modulation width, average center BW, min-max center BW difference, average mod depth sur, min-max mod depth sur (phase all equal in this case)
@@ -295,13 +299,18 @@ def param_calculator(paraml,fltind,outind,rmslist,rmsThres,dataPlot=False,deco="
                 i=i+1
                 ax=fig2.add_subplot(3,4,i)
                 a=ax.scatter(x,y,c=np.array(rmslist),cmap='coolwarm',edgecolors="none",s=10)
-                a.set_clim(4.5-0.8,4.5+0.8)
+                if RMSnorm==False:
+                    a.set_clim(4.5-0.8,4.5+0.8)                    
+                else:
+                    a.set_clim(min(rmslist),min(rmslist)+1.6)#color coding to each of the minimum RMS value.
                 #ax.set_facecolor("whitesmoke")
                 ax.set_title('x=%s , y=%s'%(params[j],params[k]),fontdict={'fontsize': 15, 'fontweight': 'medium'})
                 ax.tick_params(axis='both', which='major', labelsize=15)
         colbar=plt.colorbar(a,extend="max")
         colbar.ax.tick_params(labelsize=15)
         plt.subplots_adjust(left=0.05, bottom=0.05, right=0.99, top=0.89, wspace=0.2, hspace=0.39)
+        if RMSnorm == True:
+            return
     """
     Look at the filtered model fits with waitforbuttonpress 
     NOTE: this code should be stopped after a while, as it will go through each and every model in the uploaded file.
@@ -447,7 +456,7 @@ pvtot=param_calculator(popVecParamstot,popvecindtot,popvecoutcuni,popVecRmstot,4
 
 #Same with maxfr normalization in nonuniform model
 mltotmf=param_calculator(mlParamsmftot,mlindmftot,mlout,mlRmsmftot,4,deco="ml",dataPlot=True,label="A")#mlout now unnecessary parameter which has no effect so leave it be
-pvtotmf=param_calculator(popVecParamsmf,popvecindmf,popvecoutmf,popVecRmsmf,4.5,deco="vecsum",dataPlot=True,bwType="gradient/max",label="B")
+pvtotmf=param_calculator(popVecParamsmftot,popvecindmftot,popvecoutmf,popVecRmsmftot,4.5,deco="vecsum",dataPlot=True,bwType="gradient/max",label="B")
 
 #best model fits considering also maxfr vs totarea normalizations:
 bothdecbest=param_calculator(mlParams,mlind,mlout,mlRms,4.5,deco="both",dataPlot=True,paraml2=popVecParamsmf,fltind2=popvecindmf,bwType2="gradient/max")
@@ -457,6 +466,10 @@ bothdecbestttar=param_calculator(mlParams,mlind,mlout,mlRms,4.5,deco="both",data
 #Other considerations
 pvsum=param_calculator(popVecParams,popvecind,popvecout,popVecRms,4.5,deco="vecsum",dataPlot=True)
 pvmf=param_calculator(popVecParamsmf,popvecindmf,popvecoutmf,popVecRmsmf,4.5,deco="vecsum",dataPlot=True,bwType="gradient/max")
+
+#Generate the parameter scan with all color coding corresponding to the minimal RMS value of each decoder.
+mltotn=param_calculator(mlParamstot,mlindtot,mlout,mlRmstot,4,deco="ml",dataPlot=True,label="A",RMSnorm=True)#mlout now unnecessary parameter which has no effect so leave it be
+pvtotmfn=param_calculator(popVecParamsmftot,popvecindmftot,popvecoutmf,popVecRmsmftot,4.5,deco="vecsum",dataPlot=True,bwType="gradient/max",label="B",RMSnorm=True)
 
 
 #Same trick as before, try to open the pckl file, if not create one
@@ -1838,3 +1851,35 @@ for i in np.linspace(0,315,8):
 MAKE ALSO THE HISTOGRAM BETTER, WITH AXIS NAMES ETC!
 GIVE MEAN AND VARIANCE VALUES FOR EACH PARAMETER BASED ON BEST 10 FITS
 '''
+
+
+"""
+SAD MADNESS
+"""
+maxtilt = np.zeros(len(dictTot))
+angdifmax = np.zeros(len(dictTot))
+for i in range(len(dictTot)):
+    maxtilt[i] = np.max(np.abs(np.array(list(dictTot[i*45]['angshi'].values()))))
+    
+maxsurround = np.where(maxtilt == max(maxtilt))[0][0]*45
+maxsurangs = np.array(list(dictTot[maxsurround]["angshi"].values()))
+stds = np.array(list(dictTot[maxsurround]["se"].values()))*np.sqrt(5)
+std = stds[maxsurangs==max(maxsurangs)] #standard deviation of the maximum hue shift value.
+
+#do the simulations:
+model = col.colmod(None, 2.3, None, [1.2,0.9], bwType="gradient/sum", phase=22.5, avgSur=maxsurround, depInt=[0.2,0.4],\
+                   depmod=True, stdtransform=False)
+
+dec = col.decoder.ml(model.x, model.centery, model.resulty, model.unitTracker, avgSur=maxsurround, dataFit=True)
+
+#schizo for different rates of sur suppression
+cohensd = np.zeros(4)
+idx = 0
+for i in [0.01, 0.03, 0.05, 0.1]:    
+    modelschiz = col.colmod(None, 2.3, None, [1.2,0.9], bwType="gradient/sum", phase=22.5, avgSur=maxsurround, depInt=[0.2-i,0.4-i],\
+                        depmod=True, stdtransform=False)
+    decschiz = col.decoder.ml(modelschiz.x, modelschiz.centery, modelschiz.resulty, modelschiz.unitTracker, avgSur=maxsurround, dataFit=True)
+    cohensd[idx] = (max(dec.angShift)-max(decschiz.angShift))/std
+    idx += 1
+
+ntots = [145, 44, 24, 12] #balanced design etc etc....
