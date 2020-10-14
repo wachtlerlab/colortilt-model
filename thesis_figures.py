@@ -941,6 +941,23 @@ ax.legend(['maxfr','totarea'], prop={"size":12})
 """
 
 """
+Figure: population activity at 0° with and without surround modulation as well as population activity at ml best model
+predicted hue bias at 0° with 0° surround.
+"""
+mltabest = {'depInt': [0.2, 0.3999999999999999],
+            'bwType': 'gradient/sum',
+            'stdInt': [1.2, 0.9],
+            'Ksur': 2.3,
+            'phase': 22.5,
+            'depmod': True,
+            'stdtransform': False,
+            'Kcent': None,
+            'maxInhRate': None}
+
+mltamod = col.colmod(**mltabest)
+
+
+"""
 FIGURES TO PUT:
 Parameter distribution DONE BUT MANUAL
 Best fit of both models in same plot without data DONE BUT MANUAL
