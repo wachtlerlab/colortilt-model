@@ -1830,6 +1830,39 @@ for i in range(0,10):
 print(min(depb10),max(depu10),min(kb10),max(ku10),min(ksi10),max(ksi10))
 
 """
+ZERO CROSSINGS FOR BEST ML AND PV DECODERS
+"""
+bestmldict = mlParamstot[mlindtot[0]]
+bestpvdict = popVecParamsmftot[popvecindmftot[0]]
+mlmoddict = {'Kcent' : None, 'Ksur' : bestmldict['ksi'],
+             'maxInhRate' : None, 'stdInt' : [bestmldict['ku'], bestmldict['kb']],
+             'bwType' : 'gradient/sum', 'phase' : 22.5,
+             'avgSur' : None, 'depInt' : [bestmldict['depb'], bestmldict['depu']],
+             'depmod' : True, 'stdtransform' : False}
+
+pvmoddict = {'Kcent' : None, 'Ksur' : bestpvdict['ksi'],
+             'maxInhRate' : None, 'stdInt' : [bestpvdict['ku'], bestpvdict['kb']],
+             'bwType' : 'gradient/max', 'phase' : 22.5,
+             'avgSur' : None, 'depInt' : [bestpvdict['depb'], bestpvdict['depu']],
+             'depmod' : True, 'stdtransform' : False}
+
+zerocrossings = np.zeros([2,len(np.linspace(0,315,8))]) #zero crossings preallocated, 1st column ml, second pv
+for i, surang in enumerate(np.linspace(0,315,8)):
+    print(surang)
+    mlmoddict['avgSur'] = surang
+    pvmoddict['avgSur'] = surang
+    mlmod = col.colmod(**mlmoddict)
+    pvmod = col.colmod(**pvmoddict)
+    mldec = col.decoder.ml(mlmod.x, mlmod.centery, mlmod.resulty, mlmod.unitTracker, avgSur=surang, dataFit=True, tabStep=1)
+    pvdec = col.decoder.vecsum(pvmod.x, pvmod.resulty, pvmod.unitTracker, avgSur=surang)
+    pvdec.centSurDif = np.array(pvdec.centSurDif)
+    pvdec.angShift = np.array(pvdec.angShift)
+    mldec.centSurDif = np.array(mldec.centSurDif)
+    mldec.angShift = np.array(mldec.angShift)
+    zerocrossings[0,i] = mldec.angShift[mldec.centSurDif==0]
+    zerocrossings[1,i] = pvdec.angShift[pvdec.centSurDif==0]
+    
+"""
 INVESTIGATE THE EFFECT OF PHASE ON COLOR TILT CURVES
 """
 
@@ -1883,3 +1916,6 @@ for i in [0.01, 0.03, 0.05, 0.1]:
     idx += 1
 
 ntots = [145, 44, 24, 12] #balanced design etc etc....
+
+model = col.colmod(None, 2.3, None, stdInt=[2,1.7], bwType='gradient/max', phase=22.5, depInt = [0.4,0.6], depmod=True, stdtransform=False)
+pv = col.decoder.vecsum(model.x, model.resulty, model.unitTracker)
